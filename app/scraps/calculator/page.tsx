@@ -1,7 +1,7 @@
 "use client";
-
+import Navbar from "@/app/components/NavBar";
 import { useEffect, useRef, useState } from "react";
-import { useTheme } from "next-themes";
+
 
 interface Result {
   scrap: number;
@@ -10,18 +10,17 @@ interface Result {
 }
 
 export default function App() {
-  const { theme, setTheme } = useTheme();
   const [scraps, setScraps] = useState([""]);
   const [woTotal, setWoTotal] = useState("");
   const [totalYards, setTotalYards] = useState("");
   const [results, setResults] = useState<Result[]>([]);
-  const [menuOpen, setMenuOpen] = useState(false);
+ 
   const [user, setUser] = useState("");
 
   const inputRefs = useRef<HTMLInputElement[]>([]);
 
   useEffect(() => {
-    const u = localStorage.getItem("usern");
+    const u = localStorage.getItem("userdata");
     if (u) setUser(u);
 
     // KEYBOARD SHORTCUTS
@@ -67,7 +66,7 @@ export default function App() {
     setScraps(scraps.filter((_, i) => i !== index));
 
   const logout = () => {
-    localStorage.removeItem("usern");
+    localStorage.removeItem("userdata");
     location.reload();
   };
 
@@ -101,39 +100,10 @@ export default function App() {
   };
 
   return (
+    
     <div className="min-h-screen bg-black text-white">
 
-      {/* NAVBAR */}
-      <nav className="border-b border-white/10 bg-black/70 backdrop-blur-lg px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-        <h1 className="text-2xl font-semibold tracking-wide">Scrap Calculator</h1>
-
-        <div className="flex items-center gap-4">
-          <div className="relative">
-
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="px-4 py-2 bg-white/10 rounded flex items-center gap-2 hover:bg-white/20"
-            >
-              <span className="relative flex items-center gap-2">
-                {/* user icon neon */}
-                <span className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]"></span>
-                {user || "User"}
-              </span>
-            </button>
-
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 bg-black border border-white/10 rounded-md w-44 shadow-xl">
-                <button
-                  onClick={logout}
-                  className="px-4 py-2 w-full text-left hover:bg-white/10 rounded"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+    <Navbar user={user}></Navbar>
 
       {/* CONTENT - RESPONSIVE GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-6 md:p-10">
@@ -206,7 +176,7 @@ export default function App() {
             onClick={calculate}
             className="mt-8 w-full bg-white text-black py-3 font-semibold rounded-lg hover:bg-gray-200 transition"
           >
-            Procesar datos
+            Calcular
           </button>
         </section>
 
@@ -223,13 +193,13 @@ export default function App() {
                 className="p-4 bg-white/5 border border-white/10 rounded-lg mb-4"
               >
                 <p><strong>Scrap:</strong> {r.scrap}</p>
-                <p><strong>División:</strong> {r.division}</p>
-                <p><strong>Resultado final:</strong> {r.finalResult}</p>
+               
+                <p><strong>Yards: </strong> {r.finalResult}</p>
 
                 <button
                   onClick={() =>
                     copyText(
-                      `${r.scrap}\nDivisión: ${r.division}\nResultado final: ${r.finalResult}`
+                      `${r.finalResult}`
                     )
                   }
                   className="mt-3 px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition"

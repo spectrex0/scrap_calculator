@@ -22,51 +22,61 @@ const api = new Elysia({ prefix: "/api" })
   .use(swagger())
   .use(authRoutes)
   .use(roleRoutes)
-  .post(
-    "/calculate",
-    ({ body }) => {
-      const { scraps, woTotal, totalYards } = body;
+ .post(
+  "/calculate",
+  ({ body }) => {
+    const { scraps, woTotal, totalYards } = body;
 
-      try {
-        const wo = Number(woTotal);
-        const yards = Number(totalYards);
+    try {
+      const wo = Number(woTotal);
+      const yards = Number(totalYards);
 
-        // Procesar cada scrap individualmente
-        const results = scraps.map((value) => {
-          const scrap = Number(value);
-
-          // Paso 1
-          const division = scrap / wo;
-
-          // Paso 2
-          const finalResult = division * yards;
-
-          return {
-            scrap,
-            division,
-            finalResult,
-          };
-        });
-
-        return {
-          success: true,
-          results,
-        };
-      } catch (error) {
+      // Validaciones básicas
+      if (isNaN(wo) || isNaN(yards) || wo <= 0 || yards <= 0) {
         return {
           success: false,
-          message: "Error en el cálculo",
+          message: "WO Total y Total Yards deben ser números positivos",
         };
       }
-    },
-    {
-      body: t.Object({
-        scraps: t.Array(t.String()), // cada scrap llega individual
-        woTotal: t.String(),
-        totalYards: t.String(),
-      }),
+
+      // Filtrar: solo procesar scraps que no sean "0" (como string) ni 0 (como número)
+      const validScraps = scraps.filter((value) => {
+        const num = Number(value);
+        return !isNaN(num) && num !== 0;
+      });
+
+      // Procesar solo los scraps válidos
+      const results = validScraps.map((value) => {
+        const scrap = Number(value);
+        const division = scrap / wo;
+        const finalResult = division * yards;
+
+        return {
+          scrap,
+          division,
+          finalResult,
+        };
+      });
+
+      return {
+        success: true,
+        results,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: "Error en el cálculo",
+      };
     }
-  );
+  },
+  {
+    body: t.Object({
+      scraps: t.Array(t.String()), // cada scrap llega como string
+      woTotal: t.String(),
+      totalYards: t.String(),
+    }),
+  }
+);
 
 export type API = typeof api;
 export const POST = api.handle;

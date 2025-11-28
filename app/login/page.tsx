@@ -8,53 +8,53 @@ export default function Login() {
   const [username, setU] = useState("");
   const [password, setP] = useState("");
 
-  // const login = async () => {
-  //   const res = await rpc.api.auth.login.post({
-  //     username: username,
-  //     password: password,
-  //   });
+  const login = async () => {
+    const res = await rpc.api.auth.login.post({
+      username: username,
+      password: password,
+    });
 
-  //   if (res.error) return alert(res.error.message ?? "Login failed");
+    if (res.error) return alert(res.error.message ?? "Login failed");
 
-  //   const data = res.data;
-  //   if (!data?.success) return alert(data?.message ?? "Login failed");
+    const data = res.data;
+    if (!data?.success) return alert(data?.message ?? "Login failed");
 
-  //   const token = (data as any).token;
-  //   if (token) document.cookie = `token=${token}; path=/;`;
+    const token = (data as any).token;
+    if (token) document.cookie = `token=${token}; path=/;`;
 
-  //   const user = data.user;
+    const user = data.user;
 
-  //   if (user?.username) {
-  //     localStorage.setItem(
-  //       "userdata",
-  //       JSON.stringify({ username: user.username, role: user.role })
-  //     );
-  //   }
-
-  //   router.push("/scraps/calculator");
-  // };
-
-  function login(){
-    let user = "sc";
-    let pas = "panel"
-
-    try {
-      if (!username){
-        alert("please add a username")
-      }
-      if(!password){
-        alert("dude, wheres the password?")
-      }
-
-      if(user === username && pas === password){
-        router.push("/scraps/calculator")
-      }
-    } catch (error) {
-      return{
-        message: "something went wrong"
-      }
+    if (user?.username) {
+      localStorage.setItem(
+        "userdata",
+        JSON.stringify({ username: user.username, role: user.role })
+      );
     }
+
+    router.push("/scraps/calculator");
   };
+
+  // function login(){
+  //   let user = "sc";
+  //   let pas = "panel"
+
+  //   try {
+  //     if (!username){
+  //       alert("please add a username")
+  //     }
+  //     if(!password){
+  //       alert("dude, wheres the password?")
+  //     }
+
+  //     if(user === username && pas === password){
+  //       router.push("/scraps/calculator")
+  //     }
+  //   } catch (error) {
+  //     return{
+  //       message: "something went wrong"
+  //     }
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4">
