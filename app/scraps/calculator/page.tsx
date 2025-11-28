@@ -103,7 +103,7 @@ export default function App() {
     
     <div className="min-h-screen bg-black text-white">
 
-    <Navbar user={user}></Navbar>
+   <Navbar></Navbar>
 
       {/* CONTENT - RESPONSIVE GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-6 md:p-10">
