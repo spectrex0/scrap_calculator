@@ -2,7 +2,9 @@ import swagger from "@elysiajs/swagger";
 import Elysia, { t } from "elysia";
 import { authRoutes } from "../auth/auth";
 import { roleRoutes } from "../admin/roles";
+import AdminRoute from "@/app/components/AdminRoute";
 import mongoose from "mongoose";
+import { adminRoutes } from "../admin/admin";
 import('dotenv/config')
 const url = process.env.MONGO_URL
 if (!url) {
@@ -22,6 +24,7 @@ const api = new Elysia({ prefix: "/api" })
   .use(swagger())
   .use(authRoutes)
   .use(roleRoutes)
+  .use(adminRoutes)
  .post(
   "/calculate",
   ({ body }) => {
@@ -40,8 +43,12 @@ const api = new Elysia({ prefix: "/api" })
       }
 
       // Filtrar: solo procesar scraps que no sean "0" (como string) ni 0 (como número)
-      const validScraps = scraps.filter((value) => {
-        const num = Number(value);
+      interface ScrapFilter {
+        (value: string): boolean;
+      }
+
+      const validScraps: string[] = scraps.filter((value: string): boolean => {
+        const num: number = Number(value);
         return !isNaN(num) && num !== 0;
       });
 

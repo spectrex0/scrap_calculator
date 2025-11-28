@@ -53,13 +53,13 @@ export default function Navbar() {
   };
 
   if (!user) {
-    return null; // o puedes mostrar un skeleton/loader
+    return null; 
   }
 
   return (
     <nav className="w-full bg-black border-b border-gray-800 px-6 py-4 flex items-center justify-between shadow-lg">
-      <h1 className="text-xl font-semibold">Scrap Calculator</h1>
-      <p>by Tokyo</p>
+      <h1 className="text-xl font-semibold select-none">Scrap Calculator</h1>
+      <p className="select-none">by Tokyo</p>
 
       <div className="relative">
         <button
@@ -89,7 +89,7 @@ export default function Navbar() {
                   setMenu(false);
                   router.push("/admin");
                 }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-700"
+                className="w-full text-left px-4 py-2 hover:bg-gray-700 select-none"
               >
                 Admin Panel
               </button>
@@ -99,7 +99,7 @@ export default function Navbar() {
                 setMenu(false);
                 handleLogout();
               }}
-              className="w-full text-left px-4 py-2 hover:bg-gray-700"
+              className="w-full text-left px-4 py-2 hover:bg-gray-700 select-none"
             >
               Logout
             </button>

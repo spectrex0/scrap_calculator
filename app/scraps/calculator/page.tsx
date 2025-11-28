@@ -23,7 +23,6 @@ export default function App() {
     const u = localStorage.getItem("userdata");
     if (u) setUser(u);
 
-    // KEYBOARD SHORTCUTS
     const handleKeys = (e: KeyboardEvent) => {
       if (e.key === "Enter") calculate();
       if (e.ctrlKey && e.key.toLowerCase() === "n") {

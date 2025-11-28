@@ -11,15 +11,14 @@ export default function Login() {
 
 // En tu página de login (cliente)
 const login = async () => {
-  const res = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
-  const data = await res.json();
+const res = await rpc.api.auth.login.post({
+  password: password,
+  username: username
+})
+  const data = res.data;
 
-  if (data.success) {
-    // Guardar datos del usuario en una cookie accesible desde el cliente
+  if (data && data.success && data.user) {
+    
     const userData = JSON.stringify({
       username: data.user.username,
       role: data.user.role,
