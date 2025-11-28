@@ -1,0 +1,13 @@
+ 
+import { Schema, model, models } from "mongoose";
+
+const userSchema = new Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  salt: { type: String, required: false},  
+  role: { type: String, default: "user" }
+});
+ 
+const User = models.User || model("User", userSchema);
+
+export { User };
