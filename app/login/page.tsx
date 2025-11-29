@@ -23,10 +23,15 @@ export default function Login() {
       document.cookie = `userdata=${encodeURIComponent(userData)}; path=/; max-age=604800`; // 7 días
       router.push("/scraps/calculator");
     }
+    rpc.api.log.post({
+      username: username,
+      event: "Login"
+    }).catch(err => {
+    });
   };
 
   const recentChanges = [
-    "Funciones en el teclado para hacer el trabajo mas rapido (Click en el icono de teclado para saber mas!)",
+    "Funciones en el teclado para hacer el trabajo mas rapido (Click en el icono de teclado para saber mas)",
     "Panel de administración con gestión de usuarios",
     "Registro de acciones en tiempo real",
     "Interfaz de inicio de sesión mejorada",

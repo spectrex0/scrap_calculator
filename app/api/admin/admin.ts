@@ -18,6 +18,15 @@ export const adminRoutes = new Elysia({ prefix: "/admin" })
       logs
     };
   })
+  
+  .get("/logs/sesion", async () => {
+    const SLogs = await Log.find({})
+    return {
+      successs: true,
+      SLogs
+    }
+  })
+
 
   .get("/users",async () => {
      try {

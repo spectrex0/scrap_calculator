@@ -1,5 +1,5 @@
 "use client";
-
+import { rpc } from "@/lib/rpc";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 
@@ -23,7 +23,9 @@ export default function Navbar() {
   const router = useRouter();
   const [menu, setMenu] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [user, setUser] = useState<{ username: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; role: string } | null>(
+    null,
+  );
   const shortcutsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,7 +37,10 @@ export default function Navbar() {
 
     try {
       const userData = JSON.parse(decodeURIComponent(userDataStr));
-      if (typeof userData.username === "string" && typeof userData.role === "string") {
+      if (
+        typeof userData.username === "string" &&
+        typeof userData.role === "string"
+      ) {
         setUser(userData);
       } else {
         throw new Error("Invalid user data structure");
@@ -47,10 +52,12 @@ export default function Navbar() {
     }
   }, [router]);
 
-  // Cerrar shortcuts al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (shortcutsRef.current && !shortcutsRef.current.contains(e.target as Node)) {
+      if (
+        shortcutsRef.current &&
+        !shortcutsRef.current.contains(e.target as Node)
+      ) {
         setShowShortcuts(false);
       }
     };
@@ -60,7 +67,21 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showShortcuts]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (!user) return;  
+  
+    try {
+      
+      await rpc.api.log.post({
+        username: user.username,  
+        event: "Logout",
+      });
+    } catch (err) {
+      
+      
+    }
+  
+    
     deleteCookie("userdata");
     router.push("/login");
   };
@@ -69,7 +90,9 @@ export default function Navbar() {
 
   return (
     <nav className="w-full bg-black border-b border-white/10 px-6 py-4 flex items-center justify-between">
-      <h1 className="text-xl font-light tracking-wide text-white">Scrap Calculator</h1>
+      <h1 className="text-xl font-light tracking-wide text-white">
+        Scrap Calculator
+      </h1>
       <p className="text-white/60 tracking-wider">by Tokyo</p>
 
       <div className="flex items-center gap-3">
@@ -85,7 +108,9 @@ export default function Navbar() {
 
           {showShortcuts && (
             <div className="absolute right-0 top-full mt-2 w-70 bg-black border border-white/10 rounded-lg p-4 z-20">
-              <h3 className="text-sm font-light text-white mb-2 tracking-wide">Atajos</h3>
+              <h3 className="text-sm font-light text-white mb-2 tracking-wide">
+                Atajos
+              </h3>
               <ul className="text-xs text-white/70 space-y-2">
                 <li>
                   <span className="inline-block w-12 bg-white/5 border select-none border-white/10 text-center rounded mr-2 py-0.5">

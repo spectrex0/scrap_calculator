@@ -83,9 +83,19 @@ const api = new Elysia({ prefix: "/api" })
     }
   )
 
-  .post('/log', async ({body}) => {
-    const {username, event} = body
-    const gl = new Log({username, event})
+  .post('/log', async ({ body }) => {
+    const { username, event } = body;
+  
+    try {
+      const gl = new Log({ username, event });
+      await gl.save(); 
+      
+    
+      return { success: true, id: gl._id };
+    } catch (error) {
+      
+      return { success: false};
+    }
   }, {
     body: t.Object({
       username: t.String(),
