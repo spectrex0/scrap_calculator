@@ -1,9 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
-// Helper para leer una cookie por nombre
 function getCookie(name: string): string | undefined {
   if (typeof document === "undefined") return undefined;
   const nameEQ = name + "=";
@@ -16,7 +15,6 @@ function getCookie(name: string): string | undefined {
   return undefined;
 }
 
-// Helper para eliminar una cookie
 function deleteCookie(name: string) {
   document.cookie = `${name}=; Max-Age=0; path=/;`;
 }
@@ -24,7 +22,9 @@ function deleteCookie(name: string) {
 export default function Navbar() {
   const router = useRouter();
   const [menu, setMenu] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [user, setUser] = useState<{ username: string; role: string } | null>(null);
+  const shortcutsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const userDataStr = getCookie("userdata");
@@ -47,64 +47,115 @@ export default function Navbar() {
     }
   }, [router]);
 
+  // Cerrar shortcuts al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (shortcutsRef.current && !shortcutsRef.current.contains(e.target as Node)) {
+        setShowShortcuts(false);
+      }
+    };
+    if (showShortcuts) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showShortcuts]);
+
   const handleLogout = () => {
     deleteCookie("userdata");
     router.push("/login");
   };
 
-  if (!user) {
-    return null; 
-  }
+  if (!user) return null;
 
   return (
-    <nav className="w-full bg-black border-b border-gray-800 px-6 py-4 flex items-center justify-between shadow-lg">
-      <h1 className="text-xl font-semibold select-none">Scrap Calculator</h1>
-      <p className="select-none">by Tokyo</p>
+    <nav className="w-full bg-black border-b border-white/10 px-6 py-4 flex items-center justify-between">
+      <h1 className="text-xl font-light tracking-wide text-white">Scrap Calculator</h1>
+      <p className="text-white/60 tracking-wider">by Tokyo</p>
 
-      <div className="relative">
-        <button
-          onClick={() => setMenu(!menu)}
-          className="px-4 py-2 bg-black rounded flex items-center gap-2 hover:bg-gray-900"
-        >
-          {user.username}
-          {user.role === "admin" && (
-            <span
-              title="Admin"
-              className="ml-2 w-3 h-3 rounded-full bg-yellow-400 shadow-[0_0_6px_#ff0]"
-            ></span>
-          )}
-          {user.role === "user" && (
-            <span
-              title="Normal user"
-              className="ml-2 w-3 h-3 rounded-full bg-blue-400 shadow-[0_0_6px_#ff0]"
-            ></span>
-          )}
-        </button>
+      <div className="flex items-center gap-3">
+        {/* Ícono de teclado */}
+        <div className="relative" ref={shortcutsRef}>
+          <button
+            onClick={() => setShowShortcuts(!showShortcuts)}
+            className="text-white/50 hover:text-white text-lg transition"
+            aria-label="Atajos de teclado"
+          >
+            ⌨️
+          </button>
 
-        {menu && (
-          <div className="absolute right-0 mt-2 bg-gray-900 border border-gray-700 rounded shadow w-40 py-2 z-10">
+          {showShortcuts && (
+            <div className="absolute right-0 top-full mt-2 w-70 bg-black border border-white/10 rounded-lg p-4 z-20">
+              <h3 className="text-sm font-light text-white mb-2 tracking-wide">Atajos</h3>
+              <ul className="text-xs text-white/70 space-y-2">
+                <li>
+                  <span className="inline-block w-12 bg-white/5 border select-none border-white/10 text-center rounded mr-2 py-0.5">
+                    Tab
+                  </span>
+                  Agrega campo (si hay valor)
+                </li>
+                <li>
+                  <span className="inline-block w-12 bg-white/5 border select-none border-white/10 text-center rounded mr-2 py-0.5">
+                    Enter
+                  </span>
+                  Calcula resultados
+                </li>
+              </ul>
+              <button
+                onClick={() => setShowShortcuts(false)}
+                className="mt-3 text-xs text-white/50 hover:text-white underline"
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Menú de usuario */}
+        <div className="relative">
+          <button
+            onClick={() => setMenu(!menu)}
+            className="px-4 py-2 bg-black flex items-center gap-2 hover:bg-white/5 transition"
+          >
+            <span className="text-white">{user.username}</span>
             {user.role === "admin" && (
+              <span
+                title="Admin"
+                className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(255,255,255,0.6)]"
+              ></span>
+            )}
+            {user.role === "user" && (
+              <span
+                title="User"
+                className="w-2 h-2 rounded-full bg-blue-700 shadow-[0_0_6px_rgba(255,255,255,0.4)]"
+              ></span>
+            )}
+          </button>
+
+          {menu && (
+            <div className="absolute right-0 mt-2 bg-black border border-white/10 rounded py-2 z-10 w-40">
+              {user.role === "admin" && (
+                <button
+                  onClick={() => {
+                    setMenu(false);
+                    router.push("/admin");
+                  }}
+                  className="w-full text-left px-4 py-2 text-white/80 hover:text-white hover:bg-white/5"
+                >
+                  Admin Panel
+                </button>
+              )}
               <button
                 onClick={() => {
                   setMenu(false);
-                  router.push("/admin");
+                  handleLogout();
                 }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-700 select-none"
+                className="w-full text-left px-4 py-2 text-white/80 hover:text-white hover:bg-white/5"
               >
-                Admin Panel
+                Logout
               </button>
-            )}
-            <button
-              onClick={() => {
-                setMenu(false);
-                handleLogout();
-              }}
-              className="w-full text-left px-4 py-2 hover:bg-gray-700 select-none"
-            >
-              Logout
-            </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );

@@ -2,7 +2,6 @@
 import Navbar from "@/app/components/NavBar";
 import { useEffect, useRef, useState } from "react";
 
-
 interface Result {
   scrap: number;
   division: number;
@@ -14,30 +13,35 @@ export default function App() {
   const [woTotal, setWoTotal] = useState("");
   const [totalYards, setTotalYards] = useState("");
   const [results, setResults] = useState<Result[]>([]);
- 
   const [user, setUser] = useState("");
 
   const inputRefs = useRef<HTMLInputElement[]>([]);
+  const woInputRef = useRef<HTMLInputElement>(null);
+  const yardsInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const u = localStorage.getItem("userdata");
     if (u) setUser(u);
 
-    const handleKeys = (e: KeyboardEvent) => {
-      if (e.key === "Enter") calculate();
-      if (e.ctrlKey && e.key.toLowerCase() === "n") {
-        e.preventDefault();
-        addScrap();
+    const handleGlobalKeys = (e: KeyboardEvent) => {
+      if (e.ctrlKey) {
+        if (e.key.toLowerCase() === "n") {
+          e.preventDefault();
+          addScrap();
+        }
+        if (e.key === "Backspace") {
+          e.preventDefault();
+          setScraps([""]);
+        }
+        if (e.key.toLowerCase() === "l") {
+          e.preventDefault();
+          logout();
+        }
       }
-      if (e.ctrlKey && e.key === "Backspace") {
-        e.preventDefault();
-        setScraps([""]);
-      }
-      if (e.ctrlKey && e.key.toLowerCase() === "l") logout();
     };
 
-    window.addEventListener("keydown", handleKeys);
-    return () => window.removeEventListener("keydown", handleKeys);
+    window.addEventListener("keydown", handleGlobalKeys);
+    return () => window.removeEventListener("keydown", handleGlobalKeys);
   }, []);
 
   const updateScrap = (index: number, value: string) => {
@@ -47,12 +51,7 @@ export default function App() {
   };
 
   const addScrap = () => {
-    setScraps((prev) => {
-      const updated = [...prev, ""];
-      return updated;
-    });
-
-    // focusing last input
+    setScraps((prev) => [...prev, ""]);
     setTimeout(() => {
       const lastIndex = inputRefs.current.length - 1;
       if (inputRefs.current[lastIndex]) {
@@ -61,8 +60,10 @@ export default function App() {
     }, 10);
   };
 
-  const removeScrap = (index: number) =>
-    setScraps(scraps.filter((_, i) => i !== index));
+  const removeScrap = (index: number) => {
+    const newScraps = scraps.filter((_, i) => i !== index);
+    setScraps(newScraps.length ? newScraps : [""]);
+  };
 
   const logout = () => {
     localStorage.removeItem("userdata");
@@ -74,46 +75,89 @@ export default function App() {
   };
 
   const calculate = async () => {
-    const res = await fetch("/api/calculate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scraps, woTotal, totalYards }),
-    });
-    
-    
+    if (!woTotal.trim() || !totalYards.trim() || scraps.every(s => !s.trim())) {
+      alert("Por favor, completa todos los campos.");
+      return;
+    }
 
-    const data = await res.json();
-    if (data.success) {
-      setResults(data.results);
+    try {
+      const res = await fetch("/api/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scraps: scraps.filter(s => s.trim()), // ✅ solo strings
+          woTotal: woTotal.trim(),             // ✅ string
+          totalYards: totalYards.trim(),       // ✅ string
+        }),
+      });
 
-      // clean scraps after sending
-      setScraps([""]);
+      const data = await res.json();
+      if (data.success) {
+        setResults(data.results);
+        setScraps([""]);
+        setTimeout(() => inputRefs.current[0]?.focus(), 10);
+      } else {
+        alert("Error al calcular: " + (data.message || "intente de nuevo"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error de conexión");
+    }
+  };
 
-      // focus first scrap field
-      setTimeout(() => {
-        if (inputRefs.current[0]) {
-          inputRefs.current[0].focus();
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      calculate();
+    } else if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      if (index === scraps.length - 1 && scraps[index].trim() !== "") {
+        addScrap();
+      } else {
+        const nextIndex = index + 1;
+        if (inputRefs.current[nextIndex]) {
+          inputRefs.current[nextIndex].focus();
+        } else {
+          woInputRef.current?.focus();
         }
-      }, 10);
+      }
+    }
+  };
+
+  const handleWOKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      calculate();
+    } else if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      yardsInputRef.current?.focus();
+    }
+  };
+
+  const handleYardsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      calculate();
+    } else if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      inputRefs.current[0]?.focus();
     }
   };
 
   return (
-    
     <div className="min-h-screen bg-black text-white">
+      <Navbar />
 
-   <Navbar></Navbar>
-
-      {/* CONTENT - RESPONSIVE GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-6 md:p-10">
-
         {/* INPUTS */}
-        <section className="bg-black border border-white/10 p-6 rounded-xl shadow-lg">
-          <h2 className="text-xl font-semibold mb-6">Ingresar datos</h2>
+        <section className="bg-black border border-white/10 p-6 rounded-xl">
+          <h2 className="text-xl font-light tracking-wide mb-6">Ingresar datos</h2>
 
-          {/* SCRAP FIELDS */}
           <div className="space-y-4">
-            <label className="font-medium opacity-90">Scraps</label>
+            <label className="font-light text-white/80 tracking-wide">Scraps</label>
 
             {scraps.map((value, index) => (
               <div key={index} className="flex gap-3">
@@ -124,14 +168,18 @@ export default function App() {
                   type="number"
                   value={value}
                   onChange={(e) => updateScrap(index, e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-lg focus:ring-2 focus:ring-white/30 outline-none"
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-lg focus:ring-1 focus:ring-white/20 outline-none"
                   placeholder={`Scrap #${index + 1}`}
+                  min="0"
+                  step="any"
                 />
-
                 {scraps.length > 1 && (
                   <button
+                    type="button"
                     onClick={() => removeScrap(index)}
-                    className="px-3 py-2 bg-red-600 rounded hover:bg-red-700"
+                    className="px-3 py-2 bg-white text-black rounded hover:bg-white/90 transition"
+                    aria-label="Eliminar scrap"
                   >
                     ✕
                   </button>
@@ -140,8 +188,9 @@ export default function App() {
             ))}
 
             <button
+              type="button"
               onClick={addScrap}
-              className="w-full px-4 py-3 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 transition"
+              className="w-full px-4 py-3 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition"
             >
               + Añadir scrap
             </button>
@@ -149,59 +198,63 @@ export default function App() {
 
           {/* WO */}
           <div className="mt-6">
-            <label>WO Total</label>
+            <label className="block font-light text-white/80 tracking-wide">WO Total</label>
             <input
+              ref={woInputRef}
               type="number"
               value={woTotal}
               onChange={(e) => setWoTotal(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-lg mt-1 focus:ring-2 focus:ring-white/30 outline-none"
+              onKeyDown={handleWOKeyDown}
+              className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-lg mt-1 focus:ring-1 focus:ring-white/20 outline-none"
               placeholder="8000"
+              min="0"
+              step="any"
             />
           </div>
 
           {/* YARDS */}
           <div className="mt-6">
-            <label>Total de yardas</label>
+            <label className="block font-light text-white/80 tracking-wide">Total de yardas</label>
             <input
+              ref={yardsInputRef}
               type="number"
               value={totalYards}
               onChange={(e) => setTotalYards(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-lg mt-1 focus:ring-2 focus:ring-white/30 outline-none"
+              onKeyDown={handleYardsKeyDown}
+              className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-lg mt-1 focus:ring-1 focus:ring-white/20 outline-none"
               placeholder="800"
+              min="0"
+              step="any"
             />
           </div>
 
           <button
+            type="button"
             onClick={calculate}
-            className="mt-8 w-full bg-white text-black py-3 font-semibold rounded-lg hover:bg-gray-200 transition"
+            className="mt-8 w-full bg-white text-black py-3 font-medium rounded-lg hover:bg-white/90 transition"
           >
             Calcular
           </button>
         </section>
 
         {/* RESULTS */}
-        <section className="bg-black border border-white/10 p-6 rounded-xl shadow-lg">
-          <h2 className="text-xl font-semibold mb-6">Resultados</h2>
+        <section className="bg-black border border-white/10 p-6 rounded-xl">
+          <h2 className="text-xl font-light tracking-wide mb-6">Resultados</h2>
 
           {results.length === 0 ? (
-            <p className="opacity-70">No hay resultados.</p>
+            <p className="text-white/60 italic">No hay resultados.</p>
           ) : (
             results.map((r, i) => (
               <div
                 key={i}
                 className="p-4 bg-white/5 border border-white/10 rounded-lg mb-4"
               >
-                <p><strong>Scrap:</strong> {r.scrap}</p>
-               
-                <p><strong>Yards: </strong> {r.finalResult}</p>
-
+                <p><strong className="font-light">Scrap:</strong> {r.scrap}</p>
+                <p><strong className="font-light">Yards:</strong> {r.finalResult}</p>
                 <button
-                  onClick={() =>
-                    copyText(
-                      `${r.finalResult}`
-                    )
-                  }
-                  className="mt-3 px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition"
+                  type="button"
+                  onClick={() => copyText(String(r.finalResult))}
+                  className="mt-3 px-4 py-2 bg-white text-black rounded hover:bg-white/90 transition"
                 >
                   Copiar
                 </button>

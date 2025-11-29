@@ -3,6 +3,7 @@ import Elysia, { t } from "elysia";
 import { authRoutes } from "../auth/auth";
 import { roleRoutes } from "../admin/roles";
 import AdminRoute from "@/app/components/AdminRoute";
+import { Log } from "../db/logs.model";
 import mongoose from "mongoose";
 import { adminRoutes } from "../admin/admin";
 import('dotenv/config')
@@ -25,65 +26,72 @@ const api = new Elysia({ prefix: "/api" })
   .use(authRoutes)
   .use(roleRoutes)
   .use(adminRoutes)
- .post(
-  "/calculate",
-  ({ body }) => {
-    const { scraps, woTotal, totalYards } = body;
+  .post(
+    "/calculate",
+    ({ body }) => {
+      const { scraps, woTotal, totalYards } = body;
 
-    try {
-      const wo = Number(woTotal);
-      const yards = Number(totalYards);
+      try {
+        const wo = Number(woTotal);
+        const yards = Number(totalYards);
 
-      // Validaciones básicas
-      if (isNaN(wo) || isNaN(yards) || wo <= 0 || yards <= 0) {
+        if (isNaN(wo) || isNaN(yards) || wo <= 0 || yards <= 0) {
+          return {
+            success: false,
+            message: "WO Total y Total Yards deben ser números positivos",
+          };
+        }
+
+        interface ScrapFilter {
+          (value: string): boolean;
+        }
+
+        const validScraps: string[] = scraps.filter((value: string): boolean => {
+          const num: number = Number(value);
+          return !isNaN(num) && num !== 0;
+        });
+
+        const results = validScraps.map((value) => {
+          const scrap = Number(value);
+          const division = scrap / wo;
+          const finalResult = division * yards;
+
+          return {
+            scrap,
+            division,
+            finalResult,
+          };
+        });
+
+        return {
+          success: true,
+          results,
+        };
+      } catch (error) {
         return {
           success: false,
-          message: "WO Total y Total Yards deben ser números positivos",
+          message: "Error en el cálculo",
         };
       }
-
-      // Filtrar: solo procesar scraps que no sean "0" (como string) ni 0 (como número)
-      interface ScrapFilter {
-        (value: string): boolean;
-      }
-
-      const validScraps: string[] = scraps.filter((value: string): boolean => {
-        const num: number = Number(value);
-        return !isNaN(num) && num !== 0;
-      });
-
-      // Procesar solo los scraps válidos
-      const results = validScraps.map((value) => {
-        const scrap = Number(value);
-        const division = scrap / wo;
-        const finalResult = division * yards;
-
-        return {
-          scrap,
-          division,
-          finalResult,
-        };
-      });
-
-      return {
-        success: true,
-        results,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: "Error en el cálculo",
-      };
+    },
+    {
+      body: t.Object({
+        scraps: t.Array(t.String()), 
+        woTotal: t.String(),
+        totalYards: t.String(),
+      }),
     }
-  },
-  {
+  )
+
+  .post('/log', async ({body}) => {
+    const {username, event} = body
+    const gl = new Log({username, event})
+  }, {
     body: t.Object({
-      scraps: t.Array(t.String()), // cada scrap llega como string
-      woTotal: t.String(),
-      totalYards: t.String(),
-    }),
-  }
-);
+      username: t.String(),
+      event: t.String()
+    })
+  })
 
 export type API = typeof api;
 export const POST = api.handle;
