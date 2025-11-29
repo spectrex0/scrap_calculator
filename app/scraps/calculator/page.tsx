@@ -84,9 +84,9 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
        body: JSON.stringify({
-  scraps: filteredScraps,         // ← strings
-  woTotal: woTotal.trim(),        // ← string
-  totalYards: totalYards.trim(),  // ← string
+  scraps: filteredScraps,         
+  woTotal: woTotal.trim(),        
+  totalYards: totalYards.trim(),  
 }),
       });
 
