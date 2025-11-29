@@ -50,7 +50,7 @@ export default function AdminPanel() {
     const loadSessionLogs = async () => {
       try {
         setLoadingSessionLogs(true);
-        const res = await rpc.api.admin.logs.getSessionLogs();
+        const res = await rpc.api.admin.logs.get();
         if (res.error) throw new Error(res.error.message || "Failed to load session logs");
         setSessionLogs(res.data.logs || []);
       } catch (err) {
@@ -66,7 +66,7 @@ export default function AdminPanel() {
   const loadUserLogs = async (userId: string, userName: string) => {
     setSelectedUser(userName);
     try {
-      const res = await rpc.api.admin.logs.getUserLogs({ userId });
+      const res = await rpc.api.admin.logs.get({ $query: { userId } });
       if (res.error) throw new Error(res.error.message || "Failed to load user logs");
       setUserLogs(res.data.logs || []);
     } catch (err) {

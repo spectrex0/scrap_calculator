@@ -1,6 +1,6 @@
 "use client";
 import Navbar from "@/app/components/NavBar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 interface Result {
   scrap: number;
@@ -9,15 +9,24 @@ interface Result {
 }
 
 export default function App() {
-  const [scraps, setScraps] = useState([""]);
-  const [woTotal, setWoTotal] = useState("");
-  const [totalYards, setTotalYards] = useState("");
+  const [scraps, setScraps] = useState<string[]>([""]);
+  const [woTotal, setWoTotal] = useState<string>("");
+  const [totalYards, setTotalYards] = useState<string>("");
   const [results, setResults] = useState<Result[]>([]);
-  const [user, setUser] = useState("");
+  const [user, setUser] = useState<string>("");
 
-  const inputRefs = useRef<HTMLInputElement[]>([]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const woInputRef = useRef<HTMLInputElement>(null);
   const yardsInputRef = useRef<HTMLInputElement>(null);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem("userdata");
+    window.location.reload();
+  }, []);
+
+  const addScrap = useCallback(() => {
+    setScraps((prev) => [...prev, ""]);
+  }, []);
 
   useEffect(() => {
     const u = localStorage.getItem("userdata");
@@ -42,40 +51,30 @@ export default function App() {
 
     window.addEventListener("keydown", handleGlobalKeys);
     return () => window.removeEventListener("keydown", handleGlobalKeys);
-  }, []);
+  }, [addScrap, logout]); // ✅ Add dependencies
 
   const updateScrap = (index: number, value: string) => {
-    const updated = [...scraps];
-    updated[index] = value;
-    setScraps(updated);
-  };
-
-  const addScrap = () => {
-    setScraps((prev) => [...prev, ""]);
-    setTimeout(() => {
-      const lastIndex = inputRefs.current.length - 1;
-      if (inputRefs.current[lastIndex]) {
-        inputRefs.current[lastIndex].focus();
-      }
-    }, 10);
+    setScraps((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
   };
 
   const removeScrap = (index: number) => {
-    const newScraps = scraps.filter((_, i) => i !== index);
-    setScraps(newScraps.length ? newScraps : [""]);
-  };
-
-  const logout = () => {
-    localStorage.removeItem("userdata");
-    location.reload();
+    setScraps((prev) => {
+      const newScraps = prev.filter((_, i) => i !== index);
+      return newScraps.length ? newScraps : [""];
+    });
   };
 
   const copyText = (text: string) => {
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text).catch(console.error);
   };
 
   const calculate = async () => {
-    if (!woTotal.trim() || !totalYards.trim() || scraps.every(s => !s.trim())) {
+    const filteredScraps = scraps.filter((s) => s.trim() !== "");
+    if (!woTotal.trim() || !totalYards.trim() || filteredScraps.length === 0) {
       alert("Por favor, completa todos los campos.");
       return;
     }
@@ -85,9 +84,9 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          scraps: scraps.filter(s => s.trim()), // ✅ solo strings
-          woTotal: woTotal.trim(),             // ✅ string
-          totalYards: totalYards.trim(),       // ✅ string
+          scraps: filteredScraps.map(Number), // ✅ Convert to numbers for API
+          woTotal: parseFloat(woTotal.trim()),
+          totalYards: parseFloat(totalYards.trim()),
         }),
       });
 
@@ -95,7 +94,9 @@ export default function App() {
       if (data.success) {
         setResults(data.results);
         setScraps([""]);
-        setTimeout(() => inputRefs.current[0]?.focus(), 10);
+        setTimeout(() => {
+          if (inputRefs.current[0]) inputRefs.current[0].focus();
+        }, 10);
       } else {
         alert("Error al calcular: " + (data.message || "intente de nuevo"));
       }
@@ -105,10 +106,7 @@ export default function App() {
     }
   };
 
-  const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    index: number
-  ) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
     if (e.key === "Enter") {
       e.preventDefault();
       calculate();
@@ -116,10 +114,16 @@ export default function App() {
       e.preventDefault();
       if (index === scraps.length - 1 && scraps[index].trim() !== "") {
         addScrap();
+        setTimeout(() => {
+          const newIndex = inputRefs.current.length - 1;
+          if (inputRefs.current[newIndex]) {
+            inputRefs.current[newIndex].focus();
+          }
+        }, 0);
       } else {
         const nextIndex = index + 1;
         if (inputRefs.current[nextIndex]) {
-          inputRefs.current[nextIndex].focus();
+          inputRefs.current[nextIndex]?.focus();
         } else {
           woInputRef.current?.focus();
         }
@@ -147,6 +151,11 @@ export default function App() {
     }
   };
 
+  // Sync refs when scraps change
+  useEffect(() => {
+    inputRefs.current = inputRefs.current.slice(0, scraps.length);
+  }, [scraps.length]);
+
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar />
@@ -163,7 +172,7 @@ export default function App() {
               <div key={index} className="flex gap-3">
                 <input
                   ref={(el) => {
-                    if (el) inputRefs.current[index] = el;
+                    inputRefs.current[index] = el;
                   }}
                   type="number"
                   value={value}
@@ -179,7 +188,7 @@ export default function App() {
                     type="button"
                     onClick={() => removeScrap(index)}
                     className="px-3 py-2 bg-white text-black rounded hover:bg-white/90 transition"
-                    aria-label="Eliminar scrap"
+                    aria-label={`Eliminar scrap ${index + 1}`}
                   >
                     ✕
                   </button>
@@ -198,8 +207,11 @@ export default function App() {
 
           {/* WO */}
           <div className="mt-6">
-            <label className="block font-light text-white/80 tracking-wide">WO Total</label>
+            <label htmlFor="wo-total" className="block font-light text-white/80 tracking-wide">
+              WO Total
+            </label>
             <input
+              id="wo-total"
               ref={woInputRef}
               type="number"
               value={woTotal}
@@ -214,8 +226,11 @@ export default function App() {
 
           {/* YARDS */}
           <div className="mt-6">
-            <label className="block font-light text-white/80 tracking-wide">Total de yardas</label>
+            <label htmlFor="total-yards" className="block font-light text-white/80 tracking-wide">
+              Total de yardas
+            </label>
             <input
+              id="total-yards"
               ref={yardsInputRef}
               type="number"
               value={totalYards}
@@ -245,15 +260,16 @@ export default function App() {
             <p className="text-white/60 italic">No hay resultados.</p>
           ) : (
             results.map((r, i) => (
-              <div
-                key={i}
-                className="p-4 bg-white/5 border border-white/10 rounded-lg mb-4"
-              >
-                <p><strong className="font-light">Scrap:</strong> {r.scrap}</p>
-                <p><strong className="font-light">Yards:</strong> {r.finalResult}</p>
+              <div key={i} className="p-4 bg-white/5 border border-white/10 rounded-lg mb-4">
+                <p>
+                  <strong className="font-light">Scrap:</strong> {r.scrap}
+                </p>
+                <p>
+                  <strong className="font-light">Yards:</strong> {r.finalResult.toFixed(2)}
+                </p>
                 <button
                   type="button"
-                  onClick={() => copyText(String(r.finalResult))}
+                  onClick={() => copyText(r.finalResult.toFixed(2))}
                   className="mt-3 px-4 py-2 bg-white text-black rounded hover:bg-white/90 transition"
                 >
                   Copiar
