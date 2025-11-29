@@ -83,11 +83,11 @@ export default function App() {
       const res = await fetch("/api/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scraps: filteredScraps.map(Number), // ✅ Convert to numbers for API
-          woTotal: parseFloat(woTotal.trim()),
-          totalYards: parseFloat(totalYards.trim()),
-        }),
+       body: JSON.stringify({
+  scraps: filteredScraps,         // ← strings
+  woTotal: woTotal.trim(),        // ← string
+  totalYards: totalYards.trim(),  // ← string
+}),
       });
 
       const data = await res.json();

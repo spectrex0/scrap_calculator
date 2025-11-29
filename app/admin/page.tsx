@@ -95,7 +95,7 @@ export default function AdminPanel() {
         throw new Error(res.error.message || "Error al crear el usuario");
       }
 
-      // Recargar lista de usuarios
+
       const updated = await rpc.api.admin.users.get();
       if (updated.error) throw new Error("No se pudieron recargar los usuarios");
       setUsers(updated.data.users || []);
@@ -119,7 +119,7 @@ export default function AdminPanel() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-        {/* USERS */}
+        
         <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[#1a1a1a] flex justify-between items-center">
             <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
@@ -155,7 +155,7 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* USER LOGS */}
+         
         <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[#1a1a1a]">
             <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
@@ -183,7 +183,7 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* SESSION LOGS */}
+         
         <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[#1a1a1a]">
             <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
@@ -212,7 +212,7 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Modal: Crear usuario */}
+       
       {isModalOpen && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
