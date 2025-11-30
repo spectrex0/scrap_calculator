@@ -8,9 +8,10 @@ interface User {
 }
 
 interface SessionLog {
-  username: string;
-  event: string;
-  createdAt: string; // opcional, si la API lo incluye
+  username?: string;
+  userId?: string;
+  event?: string;
+  createdAt: string;
 }
 
 interface UserLog {
@@ -22,13 +23,11 @@ export default function AdminPanel() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [userLogs, setUserLogs] = useState<UserLog[]>([]);
-  const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [modalError, setModalError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [loadingSessionLogs, setLoadingSessionLogs] = useState(true);
 
   // Cargar usuarios
   useEffect(() => {
@@ -36,7 +35,7 @@ export default function AdminPanel() {
       try {
         const res = await rpc.api.admin.users.get();
         if (res.error) throw new Error(res.error.message || "Failed to load users");
-        setUsers(res.data.users || []);
+        setUsers(res.data?.users || []);
       } catch (err) {
         console.error("Error loading users:", err);
         setUsers([]);
@@ -45,30 +44,32 @@ export default function AdminPanel() {
     loadUsers();
   }, []);
 
-  // Cargar logs de sesión
-  useEffect(() => {
-    const loadSessionLogs = async () => {
-      try {
-        setLoadingSessionLogs(true);
-        const res = await rpc.api.admin.logs.get();
-        if (res.error) throw new Error(res.error.message || "Failed to load session logs");
-        setSessionLogs(res.data.logs || []);
-      } catch (err) {
-        console.error("Error loading session logs:", err);
-        setSessionLogs([]);
-      } finally {
-        setLoadingSessionLogs(false);
-      }
-    };
-    loadSessionLogs();
-  }, []);
-
   const loadUserLogs = async (userId: string, userName: string) => {
     setSelectedUser(userName);
     try {
       const res = await rpc.api.admin.logs.get({ $query: { userId } });
-      if (res.error) throw new Error(res.error.message || "Failed to load user logs");
-      setUserLogs(res.data.logs || []);
+
+      let logs: SessionLog[] = [];
+
+      if (Array.isArray(res)) {
+        logs = res;
+      } else if (Array.isArray(res?.data?.logs)) {
+        logs = res.data.logs;
+      } else if (Array.isArray(res?.logs)) {
+        logs = res.logs;
+      } else {
+        console.warn("Unexpected user logs response structure:", res);
+        logs = [];
+      }
+
+      const formattedLogs: UserLog[] = logs
+        .filter(log => log.event && log.createdAt)
+        .map(log => ({
+          action: log.event || "Unknown event",
+          date: new Date(log.createdAt).toLocaleString(),
+        }));
+
+      setUserLogs(formattedLogs);
     } catch (err) {
       console.error("Error loading user logs:", err);
       setUserLogs([]);
@@ -95,12 +96,10 @@ export default function AdminPanel() {
         throw new Error(res.error.message || "Error al crear el usuario");
       }
 
-
       const updated = await rpc.api.admin.users.get();
       if (updated.error) throw new Error("No se pudieron recargar los usuarios");
-      setUsers(updated.data.users || []);
+      setUsers(updated.data?.users || []);
 
-      // Reset
       setIsModalOpen(false);
       setNewUsername("");
       setNewPassword("");
@@ -113,106 +112,82 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-6 font-sans select-none">
-      <header className="mb-8">
+      <header className="mb-8 text-center">
         <h1 className="text-3xl md:text-4xl font-light tracking-tight">Admin Panel</h1>
-        <div className="w-16 h-0.5 bg-white mt-2 opacity-30"></div>
+        <div className="w-16 h-0.5 bg-white mt-2 opacity-30 mx-auto"></div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-        
-        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#1a1a1a] flex justify-between items-center">
-            <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
-              Usuarios
-            </h2>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="text-xs bg-[#1a1a1a] hover:bg-[#222] text-gray-300 px-3 py-1.5 rounded-md transition-colors"
-            >
-              + Nuevo
-            </button>
+      {/* Contenedor centrado con dos columnas en escritorio, una en móvil */}
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* Panel de Usuarios */}
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#1a1a1a] flex justify-between items-center">
+              <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
+                Usuarios
+              </h2>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="text-xs bg-[#1a1a1a] hover:bg-[#222] text-gray-300 px-3 py-1.5 rounded-md transition-colors"
+              >
+                + Nuevo
+              </button>
+            </div>
+            <div className="p-2 max-h-[70vh] overflow-y-auto">
+              {users.length === 0 ? (
+                <p className="px-4 py-3 text-gray-500 italic">No se encontraron usuarios</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {users.map((u) => (
+                    <button
+                      key={u._id}
+                      onClick={() => loadUserLogs(u._id, u.username)}
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
+                        selectedUser === u.username
+                          ? "bg-white text-black font-medium"
+                          : "bg-[#111] text-gray-200 hover:bg-[#1a1a1a] hover:text-white"
+                      }`}
+                    >
+                      {u.username}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="p-2 max-h-[65vh] overflow-y-auto">
-            {users.length === 0 ? (
-              <p className="px-4 py-3 text-gray-500 italic">No se encontraron usuarios</p>
-            ) : (
-              <div className="space-y-1.5">
-                {users.map((u) => (
-                  <button
-                    key={u._id}
-                    onClick={() => loadUserLogs(u._id, u.username)}
-                    className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
-                      selectedUser === u.username
-                        ? "bg-white text-black font-medium"
-                        : "bg-[#111] text-gray-200 hover:bg-[#1a1a1a] hover:text-white"
-                    }`}
-                  >
-                    {u.username}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
 
-         
-        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#1a1a1a]">
-            <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
-              {selectedUser ? `Logs de ${selectedUser}` : "Registros de Usuario"}
-            </h2>
-          </div>
-          <div className="p-2 max-h-[65vh] overflow-y-auto">
-            {userLogs.length === 0 ? (
-              <p className="px-4 py-3 text-gray-500 italic">
-                {selectedUser ? "No hay registros" : "Selecciona un usuario"}
-              </p>
-            ) : (
-              <div className="space-y-2.5">
-                {userLogs.map((log, i) => (
-                  <div
-                    key={i}
-                    className="px-4 py-3 bg-[#111] rounded-lg border border-[#1a1a1a] text-sm"
-                  >
-                    <p className="font-mono text-white">{log.action}</p>
-                    <p className="text-gray-500 mt-1 text-xs tracking-wide">{log.date}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-         
-        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#1a1a1a]">
-            <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
-              Logs de Sesión
-            </h2>
-          </div>
-          <div className="p-2 max-h-[65vh] overflow-y-auto">
-            {loadingSessionLogs ? (
-              <p className="px-4 py-3 text-gray-500 italic">Cargando...</p>
-            ) : sessionLogs.length === 0 ? (
-              <p className="px-4 py-3 text-gray-500 italic">No hay registros de sesión</p>
-            ) : (
-              <div className="space-y-2.5">
-                {sessionLogs.map((log, i) => (
-                  <div
-                    key={i}
-                    className="px-4 py-3 bg-[#111] rounded-lg border border-[#1a1a1a] text-sm"
-                  >
-                    <p className="font-mono text-white">{log.username}</p>
-                    <p className="text-gray-500 mt-1 text-xs tracking-wide">{log.event}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Panel de Registros de Usuario */}
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#1a1a1a]">
+              <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
+                {selectedUser ? `Logs de ${selectedUser}` : "Registros de Usuario"}
+              </h2>
+            </div>
+            <div className="p-2 max-h-[70vh] overflow-y-auto">
+              {userLogs.length === 0 ? (
+                <p className="px-4 py-3 text-gray-500 italic">
+                  {selectedUser ? "No hay registros" : "Selecciona un usuario"}
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {userLogs.map((log, i) => (
+                    <div
+                      key={i}
+                      className="px-4 py-3 bg-[#111] rounded-lg border border-[#1a1a1a] text-sm"
+                    >
+                      <p className="font-mono text-white">{log.action}</p>
+                      <p className="text-gray-500 mt-1 text-xs tracking-wide">{log.date}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-       
+      {/* Modal de creación de usuario */}
       {isModalOpen && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"

@@ -84,7 +84,7 @@ export default function Login() {
 
         <div className="mt-8 pt-6 border-t border-neutral-800">
           <h2 className="text-xs text-neutral-500 uppercase tracking-wider font-light mb-2">
-            Últimos cambios
+            Last changes
           </h2>
           <ul className="text-xs text-neutral-400 space-y-1.5">
             {recentChanges.map((change, i) => (
