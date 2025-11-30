@@ -34,6 +34,7 @@ export default function Login() {
   };
 
   const recentChanges = [
+    "Introduces a dashboard page for navigation, a new yards calculator page with backend API support for missing yards calculation, and a reusable success alert component. Updates the NavBar for dashboard navigation, adjusts login and register flows to use the dashboard, and refactors the scraps calculator route and API endpoint. Also includes minor UI and layout improvements.",
     "Funciones en el teclado para hacer el trabajo mas rapido (Click en el icono de teclado para saber mas)",
     "Panel de administración con gestión de usuarios",
     "Registro de acciones en tiempo real",
