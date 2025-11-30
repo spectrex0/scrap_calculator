@@ -1,7 +1,7 @@
 "use client";
 import { rpc } from "@/lib/rpc";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function Login() {
   const router = useRouter();
@@ -20,14 +20,17 @@ export default function Login() {
         username: data.user.username,
         role: data.user.role,
       });
-      document.cookie = `userdata=${encodeURIComponent(userData)}; path=/; max-age=604800`; // 7 días
-      router.push("/scraps/calculator");
+      document.cookie = `userdata=${encodeURIComponent(
+        userData
+      )}; path=/; max-age=604800`; // 7 días
+      router.push("/dashboard");
     }
-    rpc.api.log.post({
-      username: username,
-      event: "Login"
-    }).catch(err => {
-    });
+    rpc.api.log
+      .post( {
+        username: username,
+        event: "Login",
+      })
+      .catch((err) => {});
   };
 
   const recentChanges = [
@@ -69,7 +72,9 @@ export default function Login() {
 
         <button
           onClick={() =>
-            alert("No tienes permisos para crear cuentas. Contacta al administrador.")
+            alert(
+              "No tienes permisos para crear cuentas. Contacta al administrador."
+            )
           }
           className="mt-4 w-full text-center text-neutral-400 hover:text-white transition"
         >

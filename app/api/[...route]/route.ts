@@ -27,7 +27,7 @@ const api = new Elysia({ prefix: "/api" })
   .use(roleRoutes)
   .use(adminRoutes)
   .post(
-    "/calculate",
+    "/calculate/scraps",
     ({ body }) => {
       const { scraps, woTotal, totalYards } = body;
 
@@ -83,6 +83,75 @@ const api = new Elysia({ prefix: "/api" })
     }
   )
 
+.post(
+    "/calculate/missingyards",
+    async ({ body }) => {
+      const { currentProduction, woTotal, totalYards } = body;
+
+      // Convertir a números
+      const WO = Number(woTotal);
+      const TY = Number(totalYards);
+
+      // Validar que WO y TY sean números válidos
+      if (isNaN(WO) || isNaN(TY)) {
+        return {
+          error: "WO Total y Total de Yardas deben ser números válidos."
+        };
+      }
+
+      // Validar que currentProduction sea un array
+      if (!Array.isArray(currentProduction)) {
+        return {
+          error: "currentProduction debe ser un arreglo."
+        };
+      }
+
+      // Calcular para cada valor de producción actual
+      const results = currentProduction.map((cpValue) => {
+        const CurrentP = Number(cpValue);
+
+        // Validar que CurrentP sea un número válido
+        if (isNaN(CurrentP)) {
+          return {
+            error: `El valor de producción actual "${cpValue}" no es un número válido.`
+          };
+        }
+
+        try {
+          const WyC = WO - CurrentP;
+          const RyW = WyC / WO;
+          const RyY = RyW * TY;
+
+          // Devolver ambos valores: piezas faltantes (WyC) y yardas faltantes (RyY)
+          return {
+            WyC: WyC,
+            RyY: RyY,
+            // Opcional: incluir el valor original de entrada
+            input: CurrentP
+          };
+
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          return {
+            error: `Error en cálculo para ${CurrentP}: ${errorMessage}`
+          };
+        }
+      });
+
+
+      return {
+        success: true,
+        results: results
+      };
+    },
+    {
+      body: t.Object({
+        currentProduction: t.Array(t.String()), // Ahora es un array de strings
+        woTotal: t.String(),
+        totalYards: t.String(),
+      }),
+    }
+  )
   .post('/log', async ({ body }) => {
     const { username, event } = body;
   

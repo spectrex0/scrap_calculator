@@ -19,7 +19,7 @@ export default function Register() {
     if (!data.success) return alert(data.msg);
 
     alert("Usuario creado!");
-    router.push("/login");
+   
   };
 
   return (

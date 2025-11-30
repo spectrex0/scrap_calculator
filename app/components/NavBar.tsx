@@ -19,6 +19,7 @@ function deleteCookie(name: string) {
   document.cookie = `${name}=; Max-Age=0; path=/;`;
 }
 
+
 export default function Navbar() {
   const router = useRouter();
   const [menu, setMenu] = useState(false);
@@ -51,6 +52,9 @@ export default function Navbar() {
       router.push("/login");
     }
   }, [router]);
+function home(){
+  router.push('/dashboard')
+}
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -89,8 +93,8 @@ export default function Navbar() {
   if (!user) return null;
 
   return (
-    <nav className="w-full bg-black border-b border-white/10 px-6 py-4 flex items-center justify-between">
-      <h1 className="text-xl font-light tracking-wide text-white">
+    <nav className="w-full bg-black select-none border-b border-white/10 px-6 py-4 flex items-center justify-between">
+      <h1 onClick={() => { home(); }} className="text-xl font-light tracking-wide text-white">
         Scrap Calculator
       </h1>
       <p className="text-white/60 tracking-wider">by Tokyo</p>
