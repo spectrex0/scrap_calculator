@@ -55,8 +55,6 @@ export default function AdminPanel() {
         logs = res;
       } else if (Array.isArray(res?.data?.logs)) {
         logs = res.data.logs;
-      } else if (Array.isArray(res?.logs)) {
-        logs = res.logs;
       } else {
         console.warn("Unexpected user logs response structure:", res);
         logs = [];
