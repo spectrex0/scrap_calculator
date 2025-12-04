@@ -5,6 +5,7 @@ import { roleRoutes } from "../admin/roles";
 import AdminRoute from "@/app/components/AdminRoute";
 import { Log } from "../db/logs.model";
 import mongoose from "mongoose";
+import { comment } from "../db/comments.model";
 import { adminRoutes } from "../admin/admin";
 import('dotenv/config')
 const url = process.env.MONGO_URL
@@ -139,14 +140,13 @@ const api = new Elysia({ prefix: "/api" })
     },
     {
       body: t.Object({
-        currentProduction: t.Array(t.String()), // Ahora es un array de strings
+        currentProduction: t.Array(t.String()),  
         woTotal: t.String(),
         totalYards: t.String(),
       }),
     }
   )
-
-  // sesion logs
+ 
   .post('/log', async ({ body }) => {
     const { username, event } = body;
   
@@ -158,12 +158,33 @@ const api = new Elysia({ prefix: "/api" })
       return { success: true, id: gl._id };
     } catch (error) {
       
-      return { success: false};
+      return { success: false, ERROR: error};
     }
   }, {
     body: t.Object({
       username: t.String(),
       event: t.String()
+    })
+  })
+
+  .post("/comment", async ({body}) => {
+    const { title, author, content } = body;
+    try{
+      const sendData = await comment.create({title, author, content})
+      sendData.save()
+      return {
+        success: true
+      }
+    }catch(error){
+      return {
+        error
+      }
+    }
+  }, {
+    body: t.Object({
+      title: t.String(),
+      author: t.String(),
+      content: t.String()
     })
   })
 

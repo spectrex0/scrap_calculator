@@ -109,18 +109,16 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-6 font-sans select-none">
+    <div className="min-h-screen overflow-hidden bg-black text-white p-4 md:p-6 font-sans select-none">
       <header className="mb-8 text-center">
         <h1 className="text-3xl md:text-4xl font-light tracking-tight">Admin Panel</h1>
         <div className="w-16 h-0.5 bg-white mt-2 opacity-30 mx-auto"></div>
       </header>
 
-      {/* Contenedor centrado con dos columnas en escritorio, una en móvil */}
       <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           
-          {/* Panel de Usuarios */}
-          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl  overflow-hidden">
             <div className="px-5 py-4 border-b border-[#1a1a1a] flex justify-between items-center">
               <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
                 Usuarios
@@ -155,7 +153,6 @@ export default function AdminPanel() {
             </div>
           </div>
 
-          {/* Panel de Registros de Usuario */}
           <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[#1a1a1a]">
               <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
@@ -185,7 +182,6 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Modal de creación de usuario */}
       {isModalOpen && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
