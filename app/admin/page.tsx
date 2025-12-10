@@ -21,6 +21,9 @@ interface UserLog {
 
 export default function AdminPanel() {
   const [users, setUsers] = useState<User[]>([]);
+  const [comments, setComments] = useState<
+    { content: string; author: string; title: string; date: string }[]
+  >([]);
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [userLogs, setUserLogs] = useState<UserLog[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,19 +32,30 @@ export default function AdminPanel() {
   const [modalError, setModalError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Cargar usuarios
   useEffect(() => {
     const loadUsers = async () => {
       try {
         const res = await rpc.api.admin.users.get();
-        if (res.error) throw new Error(res.error.message || "Failed to load users");
+        if (res.error)
+          throw new Error(res.error.message || "Failed to load users");
         setUsers(res.data?.users || []);
-      } catch (err) {
-        console.error("Error loading users:", err);
+      } catch {
         setUsers([]);
       }
     };
+
+    const loadComments = async () => {
+      try {
+        const res = await rpc.api.admin.comment.get();
+        if (res.error) throw new Error("Failed to load comments");
+        setComments(res.data?.comments || []);
+      } catch {
+        setComments([]);
+      }
+    };
+
     loadUsers();
+    loadComments();
   }, []);
 
   const loadUserLogs = async (userId: string, userName: string) => {
@@ -50,19 +64,17 @@ export default function AdminPanel() {
       const res = await rpc.api.admin.logs.get({ $query: { userId } });
 
       let logs: SessionLog[] = [];
-
       if (Array.isArray(res)) {
         logs = res;
       } else if (Array.isArray(res?.data?.logs)) {
         logs = res.data.logs;
       } else {
-        console.warn("Unexpected user logs response structure:", res);
         logs = [];
       }
 
       const formattedLogs: UserLog[] = logs
-        .filter(log => log.event && log.createdAt)
-        .map(log => ({
+        .filter((log) => log.event && log.createdAt)
+        .map((log) => ({
           action: log.event || "Unknown event",
           date: new Date(log.createdAt).toLocaleString(),
         }));
@@ -90,12 +102,12 @@ export default function AdminPanel() {
 
     try {
       const res = await rpc.api.auth.register.post({ username, password });
-      if (res.error) {
+      if (res.error)
         throw new Error(res.error.message || "Error al crear el usuario");
-      }
 
       const updated = await rpc.api.admin.users.get();
-      if (updated.error) throw new Error("No se pudieron recargar los usuarios");
+      if (updated.error)
+        throw new Error("No se pudieron recargar los usuarios");
       setUsers(updated.data?.users || []);
 
       setIsModalOpen(false);
@@ -111,14 +123,16 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen overflow-hidden bg-black text-white p-4 md:p-6 font-sans select-none">
       <header className="mb-8 text-center">
-        <h1 className="text-3xl md:text-4xl font-light tracking-tight">Admin Panel</h1>
+        <h1 className="text-3xl md:text-4xl font-light tracking-tight">
+          Admin Panel
+        </h1>
         <div className="w-16 h-0.5 bg-white mt-2 opacity-30 mx-auto"></div>
       </header>
 
       <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          
-          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl  overflow-hidden">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          {/* Columna 1: Usuarios */}
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[#1a1a1a] flex justify-between items-center">
               <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
                 Usuarios
@@ -130,11 +144,13 @@ export default function AdminPanel() {
                 + Nuevo
               </button>
             </div>
-            <div className="p-2 max-h-[70vh] overflow-y-auto">
+            <div className="p-3 max-h-[65vh] overflow-y-auto custom-scrollbar">
               {users.length === 0 ? (
-                <p className="px-4 py-3 text-gray-500 italic">No se encontraron usuarios</p>
+                <p className="px-4 py-3 text-gray-500 italic">
+                  No se encontraron usuarios
+                </p>
               ) : (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {users.map((u) => (
                     <button
                       key={u._id}
@@ -153,26 +169,66 @@ export default function AdminPanel() {
             </div>
           </div>
 
+          {/* Columna 2: Logs del usuario seleccionado */}
           <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[#1a1a1a]">
               <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
-                {selectedUser ? `Logs de ${selectedUser}` : "Registros de Usuario"}
+                {selectedUser
+                  ? `Logs de ${selectedUser}`
+                  : "Registros de Usuario"}
               </h2>
             </div>
-            <div className="p-2 max-h-[70vh] overflow-y-auto">
+            <div className="p-3 max-h-[65vh] overflow-y-auto custom-scrollbar">
               {userLogs.length === 0 ? (
                 <p className="px-4 py-3 text-gray-500 italic">
                   {selectedUser ? "No hay registros" : "Selecciona un usuario"}
                 </p>
               ) : (
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {userLogs.map((log, i) => (
                     <div
                       key={i}
-                      className="px-4 py-3 bg-[#111] rounded-lg border border-[#1a1a1a] text-sm"
+                      className="px-4 py-3 bg-[#111] rounded-lg border border-[#1a1a1a]"
                     >
-                      <p className="font-mono text-white">{log.action}</p>
-                      <p className="text-gray-500 mt-1 text-xs tracking-wide">{log.date}</p>
+                      <p className="font-mono text-white text-sm break-words">
+                        {log.action}
+                      </p>
+                      <p className="text-gray-500 mt-1.5 text-xs">{log.date}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Columna 3: Comentarios (nueva sección visible) */}
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#1a1a1a]">
+              <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
+                Comentarios
+              </h2>
+            </div>
+            <div className="p-3 max-h-[65vh] overflow-y-auto custom-scrollbar">
+              {comments.length === 0 ? (
+                <p className="px-4 py-3 text-gray-500 italic">
+                  No hay comentarios
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {comments.map((c, i) => (
+                    <div
+                      key={i}
+                      className="px-4 py-3 bg-[#111] rounded-lg border border-[#1a1a1a]"
+                    >
+                      <p className="text-white text-sm break-words">
+                        {c.title}
+                      </p>
+                      <p className="text-gray-400 break-words">
+                        "{c.content}"
+                      </p>
+                      <p className="text-gray-600 text-xs mt-1.5">
+                         {c.author} • {c.date}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -182,6 +238,7 @@ export default function AdminPanel() {
         </div>
       </div>
 
+      {/* Modal de creación de usuario */}
       {isModalOpen && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
@@ -192,11 +249,15 @@ export default function AdminPanel() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-5 py-4 border-b border-[#1a1a1a]">
-              <h3 className="text-lg font-medium tracking-wide text-white">Nuevo Usuario</h3>
+              <h3 className="text-lg font-medium tracking-wide text-white">
+                Nuevo Usuario
+              </h3>
             </div>
             <form onSubmit={handleCreateUser} className="p-5 space-y-4">
               <div>
-                <label className="block text-gray-400 text-sm mb-1">Nombre de usuario</label>
+                <label className="block text-gray-400 text-sm mb-1">
+                  Nombre de usuario
+                </label>
                 <input
                   type="text"
                   value={newUsername}
@@ -206,7 +267,9 @@ export default function AdminPanel() {
                 />
               </div>
               <div>
-                <label className="block text-gray-400 text-sm mb-1">Contraseña</label>
+                <label className="block text-gray-400 text-sm mb-1">
+                  Contraseña
+                </label>
                 <input
                   type="password"
                   value={newPassword}
@@ -215,7 +278,9 @@ export default function AdminPanel() {
                   placeholder="••••••••"
                 />
               </div>
-              {modalError && <p className="text-red-400 text-sm">{modalError}</p>}
+              {modalError && (
+                <p className="text-red-400 text-sm">{modalError}</p>
+              )}
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -240,6 +305,22 @@ export default function AdminPanel() {
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #0a0a0a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #2a2a2a;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #3a3a3a;
+        }
+      `}</style>
     </div>
   );
 }

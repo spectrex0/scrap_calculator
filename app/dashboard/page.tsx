@@ -5,63 +5,67 @@ import Navbar from "../components/NavBar";
 export default function Dashboard() {
   const router = useRouter();
 
-  function sendtoSec1() {
-    router.push("/scraps");
-  }
-    function sendtoSec2 () {
-    router.push("/yards");
-  }
-  function sendtoSec3 () {
-    router.push("/comment")
-  }
+  const sendtoSec1 = () => router.push("/scraps");
+  const sendtoSec2 = () => router.push("/yards");
+  const sendtoSec3 = () => router.push("/comment");
+
   return (
-    <div className="min-h-screen  bg-black text-white">
+    <div className="min-h-screen bg-black text-white">
       <Navbar />
 
-      <div className="container mx-auto  px-4 py-12">
-        <h1 className="text-5xl md:text-6xl font-bold text-center mb-12 font-['Dancing_Script'] tracking-wider">
-          WELCOME!
+      <div className="container mx-auto px-4 py-16 md:py-20">
+        <h1 className="text-4xl md:text-5xl font-light text-center mb-16 tracking-wide text-white/90">
+          Welcome!
         </h1>
 
-        <div className="flex flex-col md:flex-row justify-center items-stretch gap-8">
-          <div className="w-full max-w-sm bg-black border border-white rounded-xl p-6 flex flex-col items-center text-center">
-            <div className="w-16 h-16 flex items-center justify-center bg-white rounded-full mb-5">
-              <span className="text-2xl font-bold text-black">✂️</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* Card 1: Scraps */}
+          <div className="bg-black/60 backdrop-blur-sm border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:border-white/20 hover:shadow">
+            <div className="w-14 h-14 flex items-center justify-center bg-white/90 rounded-xl mb-6">
+              <span className="text-2xl text-black">✂️</span>
             </div>
-            <h2 className="text-xl font-bold mb-3">Calculate Scraps</h2>
-            <p className="text-white text-sm mb-6 opacity-90">
-              Calculate the scraps reported in a order
+            <h2 className="text-xl font-medium mb-3 text-white">Calculate Scraps</h2>
+            <p className="text-white/80 text-sm mb-8 leading-relaxed">
+              Calcula los scraps reportados en una orden.
             </p>
             <button
               onClick={sendtoSec1}
-              className="px-6 py-2.5 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-6 py-3 bg-white/95 text-black font-medium rounded-xl hover:bg-white transition-colors duration-200 shadow-sm"
             >
               Start Calc
             </button>
           </div>
-          
-          <div className="w-full max-w-sm bg-black border border-white rounded-xl p-6 flex flex-col items-center text-center">
-            <div className="w-16 h-16 flex items-center justify-center bg-white rounded-full mb-5">
-              <span className="text-2xl font-bold text-black">📏</span>
+
+          {/* Card 2: Yards */}
+          <div className="bg-black/60 backdrop-blur-sm border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:border-white/20 hover:shadow">
+            <div className="w-14 h-14 flex items-center justify-center bg-white/90 rounded-xl mb-6">
+              <span className="text-2xl text-black">📏</span>
             </div>
-            <h2 className="text-xl font-bold mb-3">Missing Yards</h2>
-            <p className="text-white text-sm mb-6 opacity-90">
-              Calculate how many yards u need to completa a order
+            <h2 className="text-xl font-medium mb-3 text-white">Missing Yards</h2>
+            <p className="text-white/80 text-sm mb-8 leading-relaxed">
+              Calcula cuántas yardas necesitas o cuántas piezas salen por X yardas.
             </p>
-            <button onClick={sendtoSec2} className="px-6 py-2.5 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors">
+            <button
+              onClick={sendtoSec2}
+              className="px-6 py-3 bg-white/95 text-black font-medium rounded-xl hover:bg-white transition-colors duration-200 shadow-sm"
+            >
               Start Calc
             </button>
           </div>
-          
-          <div className="w-full max-w-sm bg-black border border-white rounded-xl p-6 flex flex-col items-center text-center">
-            <div className="w-16 h-16 flex items-center justify-center bg-white rounded-full mb-5">
-              <span className="text-2xl font-bold text-black">?</span>
+
+          {/* Card 3: Comments */}
+          <div className="bg-black/60 backdrop-blur-sm border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:border-white/20 hover:shadow">
+            <div className="w-14 h-14 flex items-center justify-center bg-white/90 rounded-xl mb-6">
+              <span className="text-2xl text-black">💬</span>
             </div>
-            <h2 className="text-xl font-bold mb-3">Comments and recommendations</h2>
-            <p className="text-white text-sm mb-6 opacity-90">
-              Do u have ideas to improve this website? send it !
+            <h2 className="text-xl font-medium mb-3 text-white">Feedback</h2>
+            <p className="text-white/80 text-sm mb-8 leading-relaxed">
+              ¿Tienes ideas para mejorar esta herramienta? ¡Compártelas!
             </p>
-            <button onClick={sendtoSec3} className="px-6 py-2.5 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors">
+            <button
+              onClick={sendtoSec3}
+              className="px-6 py-3 bg-white/95 text-black font-medium rounded-xl hover:bg-white transition-colors duration-200 shadow-sm"
+            >
               Send Comment
             </button>
           </div>

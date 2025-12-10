@@ -167,26 +167,35 @@ const api = new Elysia({ prefix: "/api" })
     })
   })
 
-  .post("/comment", async ({body}) => {
-    const { title, author, content } = body;
-    try{
-      const sendData = await comment.create({title, author, content})
-      sendData.save()
-      return {
-        success: true
-      }
-    }catch(error){
-      return {
-        error
-      }
-    }
-  }, {
-    body: t.Object({
-      title: t.String(),
-      author: t.String(),
-      content: t.String()
-    })
+  .post("/comment", async ({ body }) => {
+  const { title, author, content } = body;
+
+  try {
+    const now = new Date().toLocaleString();
+    await comment.create({
+      title,
+      author,
+      content,
+      date: now
+    });
+
+    return {
+      success: true
+    };
+  } catch (error) {
+    console.error("Error creating comment:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}, {
+  body: t.Object({
+    title: t.String(),
+    author: t.String(),
+    content: t.String()
   })
+})
 
 export type API = typeof api;
 export const POST = api.handle;

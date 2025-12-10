@@ -1,6 +1,7 @@
 import Elysia from "elysia";
 import { User } from "../db/user.model";
 import { Log } from "../db/logs.model";
+import { comment } from "../db/comments.model";
 export const adminRoutes = new Elysia({ prefix: "/admin" })
 
   .get("/logs", async ({ query }) => {
@@ -39,4 +40,17 @@ export const adminRoutes = new Elysia({ prefix: "/admin" })
         message: "something went wrong"
       }
      }
+  })
+
+  .get("/comment", async () => {
+    try {
+      const comments = await comment.find({})
+      return {
+        comments
+      }
+    } catch (error) {
+      return{
+        message: error
+      }
+    }
   })

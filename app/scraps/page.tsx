@@ -1,6 +1,6 @@
 "use client";
 import Navbar from "@/app/components/NavBar";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 interface Result {
   scrap: number;
@@ -8,12 +8,30 @@ interface Result {
   finalResult: number;
 }
 
+// Función auxiliar para enviar logs (no bloqueante)
+const sendLog = async (username: string, event: string) => {
+  try {
+    await fetch("/api/log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, event }),
+    });
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Log failed:", err);
+    }
+  }
+};
+
 export default function App() {
+  // ✅ Leer usuario directamente del localStorage (sin useEffect)
+  const initialUser = typeof window !== "undefined" ? localStorage.getItem("userdata") : null;
+  const [username, setUsername] = useState<string | null>(initialUser);
+
   const [scraps, setScraps] = useState<string[]>([""]);
   const [woTotal, setWoTotal] = useState<string>("");
   const [totalYards, setTotalYards] = useState<string>("");
   const [results, setResults] = useState<Result[]>([]);
-  const [user, setUser] = useState<string>("");
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const woInputRef = useRef<HTMLInputElement>(null);
@@ -21,6 +39,7 @@ export default function App() {
 
   const logout = useCallback(() => {
     localStorage.removeItem("userdata");
+    setUsername(null); // ✅ Actualiza estado local
     window.location.reload();
   }, []);
 
@@ -28,10 +47,8 @@ export default function App() {
     setScraps((prev) => [...prev, ""]);
   }, []);
 
+  // ✅ Solo listeners de teclado en el useEffect (sin tocar estado del usuario)
   useEffect(() => {
-    const u = localStorage.getItem("userdata");
-    if (u) setUser(u);
-
     const handleGlobalKeys = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
         if (e.key.toLowerCase() === "n") {
@@ -51,7 +68,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleGlobalKeys);
     return () => window.removeEventListener("keydown", handleGlobalKeys);
-  }, [addScrap, logout]);  
+  }, [addScrap, logout]);
 
   const updateScrap = (index: number, value: string) => {
     setScraps((prev) => {
@@ -83,17 +100,28 @@ export default function App() {
       const res = await fetch("/api/calculate/scraps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-       body: JSON.stringify({
-  scraps: filteredScraps,         
-  woTotal: woTotal.trim(),        
-  totalYards: totalYards.trim(),  
-}),
+        body: JSON.stringify({
+          scraps: filteredScraps,
+          woTotal: woTotal.trim(),
+          totalYards: totalYards.trim(),
+        }),
       });
 
       const data = await res.json();
       if (data.success) {
         setResults(data.results);
         setScraps([""]);
+ 
+        if (username) {
+          const scrapsList = filteredScraps.join(", ");
+          const totalYardsResult = data.results.reduce((sum: number, r: Result) => sum + r.finalResult, 0);
+          const event = `[${scrapsList}]
+                         WO: ${woTotal.trim()}
+                         Yardas in WO: ${totalYards.trim()}
+                         Total: ${totalYardsResult.toFixed(2)} yardas`;
+          sendLog(username, event);
+        }
+
         setTimeout(() => {
           if (inputRefs.current[0]) inputRefs.current[0].focus();
         }, 10);
@@ -151,10 +179,13 @@ export default function App() {
     }
   };
 
-  // Sync refs when scraps change
   useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, scraps.length);
   }, [scraps.length]);
+
+  const totalScrapsYards = useMemo(() => {
+    return results.reduce((sum, r) => sum + r.finalResult, 0);
+  }, [results]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -205,7 +236,6 @@ export default function App() {
             </button>
           </div>
 
-          {/* WO */}
           <div className="mt-6">
             <label htmlFor="wo-total" className="block font-light text-white/80 tracking-wide">
               WO Total
@@ -224,7 +254,6 @@ export default function App() {
             />
           </div>
 
-          {/* YARDS */}
           <div className="mt-6">
             <label htmlFor="total-yards" className="block font-light text-white/80 tracking-wide">
               Total de yardas
@@ -254,6 +283,13 @@ export default function App() {
 
         {/* RESULTS */}
         <section className="bg-black border border-white/10 p-6 rounded-xl">
+          {results.length > 0 && (
+            <div className="bg-white/10 border border-white/20 rounded-lg p-4 mb-6 text-center">
+              <p className="text-sm text-white/70">Total en yards</p>
+              <p className="text-xl font-light mt-1">{totalScrapsYards.toFixed(2)} yardas</p>
+            </div>
+          )}
+
           <h2 className="text-xl font-light tracking-wide mb-6">Resultados</h2>
 
           {results.length === 0 ? (

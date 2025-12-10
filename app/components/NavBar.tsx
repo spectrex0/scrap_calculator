@@ -95,7 +95,7 @@ function home(){
   return (
     <nav className="w-full bg-black select-none border-b border-white/10 px-6 py-4 flex items-center justify-between">
       <h1 onClick={() => { home(); }} className="text-xl font-light tracking-wide text-white">
-        Scrap Calculator
+        TOOLS
       </h1>
       <p className="text-white/60 tracking-wider">by Tokyo</p>
 

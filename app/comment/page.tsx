@@ -18,6 +18,7 @@ export default function CommentsSection() {
   const [content, setContent] = useState("");
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
   interface UserData {
     username: string;
   }
@@ -49,21 +50,23 @@ export default function CommentsSection() {
       alert("Please fill in both title and content.");
       return;
     }
-
+   
     setLoading(true);
     try {
       await rpc.api.comment.post({
         author: username,
         content: content,
         title: title,
+        
+        
       }); 
       setTitle("");
       setContent("");
-      alert("Comment posted successfully!");
+      
       router.push("/dashboard")
     } catch (error) {
       console.error("Failed to post comment:", error);
-      alert("Failed to post comment. Please try again.");
+      
     } finally {
       setLoading(false);
     }
@@ -72,7 +75,7 @@ export default function CommentsSection() {
   return (
     <div className="flex items-center justify-center min-h-screen px-4">
       <div className="bg-black p-8 rounded-lg border border-neutral-800 shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-semibold mb-6 text-white">Comments Section</h2>
+        <h2 className="text-2xl font-semibold mb-6 text-white"></h2>
 
         <input
           className="w-full mb-3 p-3 bg-black text-white border border-neutral-800 rounded"
