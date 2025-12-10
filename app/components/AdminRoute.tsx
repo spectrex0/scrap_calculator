@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default function AdminRoute({ children }: any) {
+export default function AdminRoute({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
-  const [show, setShow] = useState(false);
 
   useEffect(() => {
     const data = localStorage.getItem("userdata");
@@ -13,11 +16,7 @@ export default function AdminRoute({ children }: any) {
 
     const user = JSON.parse(data);
     if (user.role !== "admin") return router.push("/");
-
-    setShow(true);
-  }, []);
-
-  if (!show) return <div className="p-10">Cargando...</div>;
+  }, [router]);
 
   return children;
 }

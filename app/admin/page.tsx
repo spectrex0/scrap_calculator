@@ -113,8 +113,10 @@ export default function AdminPanel() {
       setIsModalOpen(false);
       setNewUsername("");
       setNewPassword("");
-    } catch (err: any) {
-      setModalError(err.message || "Ocurrió un error inesperado");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Ocurrió un error inesperado";
+      setModalError(errorMessage);
     } finally {
       setIsCreating(false);
     }
@@ -224,10 +226,10 @@ export default function AdminPanel() {
                         {c.title}
                       </p>
                       <p className="text-gray-400 break-words">
-                        "{c.content}"
+                        &ldquo;{c.content}&rdquo;
                       </p>
                       <p className="text-gray-600 text-xs mt-1.5">
-                         {c.author} • {c.date}
+                        {c.author} • {c.date}
                       </p>
                     </div>
                   ))}

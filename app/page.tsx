@@ -25,8 +25,7 @@ export default function Home() {
           router.push("/dashboard");
           return;
         }
-      } catch (e) {
-      }
+      } catch {}
     }
 
     router.push("/login");

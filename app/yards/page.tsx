@@ -1,13 +1,13 @@
 "use client";
 import Navbar from "@/app/components/NavBar";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Cambiamos la interfaz para reflejar lo que realmente recibimos del backend
 interface Result {
-  WyC: number;     // Piezas faltantes
-  RyY: number;     // Yardas faltantes
-  input?: number;  // Valor de entrada original (opcional)
-  error?: string;  // Si hubo un error en el cálculo
+  WyC: number; // Piezas faltantes
+  RyY: number; // Yardas faltantes
+  input?: number; // Valor de entrada original (opcional)
+  error?: string; // Si hubo un error en el cálculo
 }
 
 export default function App() {
@@ -15,7 +15,6 @@ export default function App() {
   const [woTotal, setWoTotal] = useState<string>("");
   const [totalYards, setTotalYards] = useState<string>("");
   const [results, setResults] = useState<Result[]>([]);
-  const [user, setUser] = useState<string>("");
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const woInputRef = useRef<HTMLInputElement>(null);
@@ -27,9 +26,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const u = localStorage.getItem("userdata");
-    // if (u) setUser(u);
-
     const handleGlobalKeys = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
         if (e.key === "Backspace") {
@@ -134,10 +130,14 @@ export default function App() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-6 md:p-10">
         {/* INPUTS */}
         <section className="bg-black border border-white/10 p-6 rounded-xl">
-          <h2 className="text-xl font-light tracking-wide mb-6">Ingresar datos</h2>
+          <h2 className="text-xl font-light tracking-wide mb-6">
+            Ingresar datos
+          </h2>
 
           <div className="space-y-4">
-            <label className="font-light text-white/80 tracking-wide">Current Production</label>
+            <label className="font-light text-white/80 tracking-wide">
+              Current Production
+            </label>
 
             {yards.map((value, index) => (
               <div key={index} className="flex gap-3">
@@ -169,7 +169,10 @@ export default function App() {
 
           {/* WO */}
           <div className="mt-6">
-            <label htmlFor="wo-total" className="block font-light text-white/80 tracking-wide">
+            <label
+              htmlFor="wo-total"
+              className="block font-light text-white/80 tracking-wide"
+            >
               WO Total
             </label>
             <input
@@ -187,7 +190,10 @@ export default function App() {
           </div>
 
           <div className="mt-6">
-            <label htmlFor="total-yards" className="block font-light text-white/80 tracking-wide">
+            <label
+              htmlFor="total-yards"
+              className="block font-light text-white/80 tracking-wide"
+            >
               Total de yardas
             </label>
             <input
@@ -220,16 +226,23 @@ export default function App() {
             <p className="text-white/60 italic">No hay resultados.</p>
           ) : (
             results.map((r, i) => (
-              <div key={i} className="p-4 bg-white/5 border border-white/10 rounded-lg mb-4">
+              <div
+                key={i}
+                className="p-4 bg-white/5 border border-white/10 rounded-lg mb-4"
+              >
                 {r.error ? (
-                  <p className="text-red-400"><strong>Error:</strong> {r.error}</p>
+                  <p className="text-red-400">
+                    <strong>Error:</strong> {r.error}
+                  </p>
                 ) : (
                   <>
                     <p>
-                      <strong className="font-light">Piezas Faltantes:</strong> {r.WyC.toFixed(2)}
+                      <strong className="font-light">Piezas Faltantes:</strong>{" "}
+                      {r.WyC.toFixed(2)}
                     </p>
                     <p>
-                      <strong className="font-light">Yardas Faltantes:</strong> {r.RyY.toFixed(2)}
+                      <strong className="font-light">Yardas Faltantes:</strong>{" "}
+                      {r.RyY.toFixed(2)}
                     </p>
                     <button
                       type="button"

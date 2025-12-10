@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default function ProtectedRoute({ children }: any) {
+export default function ProtectedRoute({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
-  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
     const token = document.cookie.includes("token=");
     if (!token) router.push("/login");
-    else setAllowed(true);
-  }, []);
-
-  if (!allowed) return <div className="p-10">Cargando...</div>;
+  }, [router]);
 
   return children;
 }

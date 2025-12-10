@@ -1,7 +1,7 @@
 import Elysia from "elysia";
-import { User } from "../db/user.model";
-import { Log } from "../db/logs.model";
 import { comment } from "../db/comments.model";
+import { Log } from "../db/logs.model";
+import { User } from "../db/user.model";
 export const adminRoutes = new Elysia({ prefix: "/admin" })
 
   .get("/logs", async ({ query }) => {
@@ -16,41 +16,40 @@ export const adminRoutes = new Elysia({ prefix: "/admin" })
 
     return {
       success: true,
-      logs
+      logs,
     };
   })
-  
+
   .get("/logs/sesion", async () => {
-    const SLogs = await Log.find({})
+    const SLogs = await Log.find({});
     return {
       successs: true,
-      SLogs
-    }
+      SLogs,
+    };
   })
 
-
-  .get("/users",async () => {
-     try {
-      const users = await User.find({})
-     return {
-      users
-     }
-     } catch (error) {
-      return{
-        message: "something went wrong"
-      }
-     }
+  .get("/users", async () => {
+    try {
+      const users = await User.find({});
+      return {
+        users,
+      };
+    } catch {
+      return {
+        message: "something went wrong",
+      };
+    }
   })
 
   .get("/comment", async () => {
     try {
-      const comments = await comment.find({})
+      const comments = await comment.find({});
       return {
-        comments
-      }
+        comments,
+      };
     } catch (error) {
-      return{
-        message: error
-      }
+      return {
+        message: error,
+      };
     }
-  })
+  });

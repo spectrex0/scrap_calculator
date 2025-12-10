@@ -26,11 +26,11 @@ export default function Login() {
       router.push("/dashboard");
     }
     rpc.api.log
-      .post( {
+      .post({
         username: username,
         event: "Login",
       })
-      .catch((err) => {});
+      .catch(() => {});
   };
 
   const recentChanges = [

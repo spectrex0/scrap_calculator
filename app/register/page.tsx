@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function Register() {
-  const router = useRouter();
   const [username, setU] = useState("");
   const [password, setP] = useState("");
 
@@ -19,7 +17,6 @@ export default function Register() {
     if (!data.success) return alert(data.msg);
 
     alert("Usuario creado!");
-   
   };
 
   return (
@@ -30,14 +27,14 @@ export default function Register() {
         <input
           className="w-full mb-3 p-3 bg-black border border-gray-700 rounded"
           placeholder="Usuario"
-          onChange={e => setU(e.target.value)}
+          onChange={(e) => setU(e.target.value)}
         />
 
         <input
           type="password"
           className="w-full mb-5 p-3 bg-black border border-gray-700 rounded"
           placeholder="Contraseña"
-          onChange={e => setP(e.target.value)}
+          onChange={(e) => setP(e.target.value)}
         />
 
         <button

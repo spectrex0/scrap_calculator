@@ -1,7 +1,7 @@
 "use client";
 import { rpc } from "@/lib/rpc";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function getCookie(name: string): string | undefined {
   if (typeof document === "undefined") return undefined;
@@ -19,13 +19,12 @@ function deleteCookie(name: string) {
   document.cookie = `${name}=; Max-Age=0; path=/;`;
 }
 
-
 export default function Navbar() {
   const router = useRouter();
   const [menu, setMenu] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [user, setUser] = useState<{ username: string; role: string } | null>(
-    null,
+    null
   );
   const shortcutsRef = useRef<HTMLDivElement>(null);
 
@@ -52,9 +51,9 @@ export default function Navbar() {
       router.push("/login");
     }
   }, [router]);
-function home(){
-  router.push('/dashboard')
-}
+  function home() {
+    router.push("/dashboard");
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -72,20 +71,15 @@ function home(){
   }, [showShortcuts]);
 
   const handleLogout = async () => {
-    if (!user) return;  
-  
+    if (!user) return;
+
     try {
-      
       await rpc.api.log.post({
-        username: user.username,  
+        username: user.username,
         event: "Logout",
       });
-    } catch (err) {
-      
-      
-    }
-  
-    
+    } catch {}
+
     deleteCookie("userdata");
     router.push("/login");
   };
@@ -94,7 +88,12 @@ function home(){
 
   return (
     <nav className="w-full bg-black select-none border-b border-white/10 px-6 py-4 flex items-center justify-between">
-      <h1 onClick={() => { home(); }} className="text-xl font-light tracking-wide text-white">
+      <h1
+        onClick={() => {
+          home();
+        }}
+        className="text-xl font-light tracking-wide text-white"
+      >
         TOOLS
       </h1>
       <p className="text-white/60 tracking-wider">by Tokyo</p>
