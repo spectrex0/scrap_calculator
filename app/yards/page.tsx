@@ -28,7 +28,7 @@ export default function App() {
 
   useEffect(() => {
     const u = localStorage.getItem("userdata");
-    if (u) setUser(u);
+    // if (u) setUser(u);
 
     const handleGlobalKeys = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
