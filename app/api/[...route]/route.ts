@@ -80,7 +80,55 @@ const api = new Elysia({ prefix: "/api" })
       }),
     }
   )
+.post(
+  "/calculate/spr", // 👈 ruta tal como la tienes
+  ({ body }) => {
+    const { cycles, piecesPerBlade, currentProduction } = body;
 
+    try {
+      const c = Number(cycles);
+      const p = Number(piecesPerBlade);
+      const curr = Number(currentProduction);
+
+      // Validación
+      if (isNaN(c) || isNaN(p) || isNaN(curr) || c < 0 || p <= 0 || curr < 0) {
+        return {
+          success: false,
+          message:
+            "Ciclos y Producción Actual deben ser ≥ 0. Piezas por cuchilla debe ser > 0.",
+        };
+      }
+
+
+      const expectedPieces = c * p;
+      const difference = expectedPieces - curr;
+
+      return {
+        success: true,
+        result: {
+          cycles: c,
+          piecesPerBlade: p,
+          expectedPieces,       
+          currentProduction: curr, 
+          difference,            
+        },
+      };
+    } catch (error) {
+      console.error("Error en el cálculo:", error);
+      return {
+        success: false,
+        message: "Error en el cálculo",
+      };
+    }
+  },
+  {
+    body: t.Object({
+      cycles: t.String(),
+      piecesPerBlade: t.String(),
+      currentProduction: t.String(),
+    }),
+  }
+)
   .post(
     "/calculate/missingyards",
     async ({ body }) => {

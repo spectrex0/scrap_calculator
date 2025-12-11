@@ -8,6 +8,8 @@ export default function Dashboard() {
   const sendtoSec1 = () => router.push("/scraps");
   const sendtoSec2 = () => router.push("/yards");
   const sendtoSec3 = () => router.push("/comment");
+  const sendtoSec4 = () => router.push("/spr");
+
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -35,7 +37,21 @@ export default function Dashboard() {
               Start Calc
             </button>
           </div>
-
+                    <div className="bg-black/60 backdrop-blur-sm border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:border-white/20 hover:shadow">
+            <div className="w-14 h-14 flex items-center justify-center bg-white/90 rounded-xl mb-6">
+              <span className="text-2xl text-black">📏</span>
+            </div>
+            <h2 className="text-xl font-medium mb-3 text-white">Scraps x hora</h2>
+            <p className="text-white/80 text-sm mb-8 leading-relaxed">
+             Calcula los scraps x hora de manera rapida
+            </p>
+            <button
+              onClick={sendtoSec4}
+              className="px-6 py-3 bg-white/95 text-black font-medium rounded-xl hover:bg-white transition-colors duration-200 shadow-sm"
+            >
+              Start Calc
+            </button>
+          </div>
           {/* Card 2: Yards */}
           <div className="bg-black/60 backdrop-blur-sm border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:border-white/20 hover:shadow">
             <div className="w-14 h-14 flex items-center justify-center bg-white/90 rounded-xl mb-6">

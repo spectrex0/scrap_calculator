@@ -1,4 +1,6 @@
 "use client";
+
+import { rpc } from "@/lib/rpc";
 import Navbar from "@/app/components/NavBar";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
@@ -8,23 +10,17 @@ interface Result {
   finalResult: number;
 }
 
-// Función auxiliar para enviar logs (no bloqueante)
 const sendLog = async (username: string, event: string) => {
   try {
-    await fetch("/api/log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, event }),
-    });
-  } catch (err) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("Log failed:", err);
-    }
+    await rpc.api.log.post(
+      {username: username, event: event}
+    )
+  } catch (error) {
+    // nothing
   }
-};
+}
 
-export default function App() {
-  // ✅ Leer usuario directamente del localStorage (sin useEffect)
+export default function App() { 
   const initialUser = typeof window !== "undefined" ? localStorage.getItem("userdata") : null;
   const [username, setUsername] = useState<string | null>(initialUser);
 
