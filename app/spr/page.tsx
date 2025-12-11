@@ -5,11 +5,11 @@ import Navbar from "@/app/components/NavBar";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 interface Result {
+  cycles: number;
+  piecesPerBlade: number;
   expectedPieces: number;
-  productionActual: number;
-  difference: number; // expected - actual
-  scrapTotal: number;
-  adjustedCycles: number;
+  currentProduction: number;
+  difference: number; // Este es el scrap
 }
 
 const sendLog = async (username: string, event: string) => {
@@ -22,41 +22,33 @@ export default function App() {
   const initialUser = typeof window !== "undefined" ? localStorage.getItem("userdata") : null;
   const [username, setUsername] = useState<string | null>(initialUser);
 
-  // Inputs
   const [ciclos, setCiclos] = useState<string>("");
   const [piezasPorCuchilla, setPiezasPorCuchilla] = useState<string>("");
   const [produccionActual, setProduccionActual] = useState<string>("");
-  const [scrapActual, setScrapActual] = useState<string>("0");
 
-  // Resultado
   const [results, setResults] = useState<Result[]>([]);
 
-  // Historial de scrap
-  const [scrapHistory, setScrapHistory] = useState<number[]>([]);
+  // ✅ Inicialización perezosa desde localStorage (sin useEffect)
+  const [scrapAnterior, setScrapAnterior] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    const saved = localStorage.getItem("ultimoScrap");
+    if (saved) {
+      const val = parseFloat(saved);
+      if (!isNaN(val)) return val;
+    }
+    return null;
+  });
 
-  // Refs (corregidos con !)
   const ciclosRef = useRef<HTMLInputElement>(null!);
   const piezasRef = useRef<HTMLInputElement>(null!);
   const produccionRef = useRef<HTMLInputElement>(null!);
-  const scrapRef = useRef<HTMLInputElement>(null!);
 
-  // Cargar historial
+  // ✅ Guardar scrapAnterior en localStorage cuando cambie
   useEffect(() => {
-    const saved = localStorage.getItem("scrapHistory");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setScrapHistory(parsed);
-        }
-      } catch {}
+    if (typeof window !== "undefined" && scrapAnterior !== null) {
+      localStorage.setItem("ultimoScrap", scrapAnterior.toString());
     }
-  }, []);
-
-  // Guardar historial
-  useEffect(() => {
-    localStorage.setItem("scrapHistory", JSON.stringify(scrapHistory));
-  }, [scrapHistory]);
+  }, [scrapAnterior]);
 
   const logout = useCallback(() => {
     localStorage.removeItem("userdata");
@@ -68,11 +60,6 @@ export default function App() {
   useEffect(() => {
     const handleGlobalKeys = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
-        if (e.key.toLowerCase() === "n") {
-          e.preventDefault();
-          setScrapActual("0");
-          setTimeout(() => scrapRef.current?.focus(), 10);
-        }
         if (e.key === "Backspace") {
           e.preventDefault();
           setResults([]);
@@ -92,56 +79,56 @@ export default function App() {
     navigator.clipboard.writeText(text).catch(console.error);
   };
 
-  const calculate = () => {
-    const c = parseFloat(ciclos);
-    const p = parseFloat(piezasPorCuchilla);
-    const prod = parseFloat(produccionActual);
-    const scrap = parseFloat(scrapActual);
-
-    if (isNaN(c) || isNaN(p) || isNaN(prod) || isNaN(scrap) || c < 0 || p <= 0 || prod < 0 || scrap < 0) {
-      alert("Todos los campos deben ser números válidos y positivos.");
+  const calculate = async () => {
+    if (!ciclos.trim() || !piezasPorCuchilla.trim() || !produccionActual.trim()) {
+      alert("Por favor, completa todos los campos.");
       return;
     }
 
-    // ✅ Sumar scrap actual con el anterior
-    const scrapAnterior = scrapHistory.length > 0 ? scrapHistory[0] : 0;
-    const scrapTotal = scrap + scrapAnterior;
+    const c = parseFloat(ciclos);
+    const p = parseFloat(piezasPorCuchilla);
+    const prod = parseFloat(produccionActual);
 
-    // ✅ Piezas esperadas (sin ajustar)
-    const expectedPieces = c * p;
-
-    // ✅ Ciclos equivalentes al scrap total
-    const ciclosDeScrap = scrapTotal / p;
-
-    // ✅ Ciclos ajustados
-    const ciclosAjustados = Math.max(0, c - ciclosDeScrap);
-
-    // ✅ Piezas ajustadas (lo que debería haber producido después de descartar scrap)
-    const adjustedPieces = ciclosAjustados * p;
-
-    // ✅ Diferencia: piezas esperadas - producción real
-    const difference = expectedPieces - prod;
-
-    const result: Result = {
-      expectedPieces,
-      productionActual: prod,
-      difference,
-      scrapTotal,
-      adjustedCycles: ciclosAjustados,
-    };
-
-    setResults([result]);
-
-    // ✅ Guardar solo el scrap actual como "anterior" para la próxima vez
-    setScrapHistory([scrap]);
-
-    // Log
-    if (username) {
-      const event = `Ciclos: ${c}\nPiezas/cuchilla: ${p}\nProducción: ${prod}\nScrap actual: ${scrap}\nScrap anterior: ${scrapAnterior}\nDiferencia: ${difference.toFixed(2)}`;
-      sendLog(username, event);
+    if (isNaN(c) || isNaN(p) || isNaN(prod) || c < 0 || p <= 0 || prod < 0) {
+      alert("Todos los valores deben ser números positivos.");
+      return;
     }
 
-    setTimeout(() => ciclosRef.current?.focus(), 10);
+    try {
+      const res = await fetch("/api/calculate/spr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cycles: ciclos,
+          piecesPerBlade: piezasPorCuchilla,
+          currentProduction: produccionActual,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        const result: Result = data.result;
+        setResults([result]);
+        setScrapAnterior(result.difference); // ✅ Guardar el scrap calculado
+
+        if (username) {
+          const event = `Ciclos: ${result.cycles}\nPiezas/cuchilla: ${result.piecesPerBlade}\nProducción: ${result.currentProduction}\nScrap: ${result.difference}`;
+          sendLog(username, event);
+        }
+
+        // Limpiar y enfocar
+        setCiclos("");
+        setPiezasPorCuchilla("");
+        setProduccionActual("");
+        setTimeout(() => ciclosRef.current?.focus(), 10);
+      } else {
+        alert("Error: " + (data.message || "intente de nuevo"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error de conexión con el servidor");
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, nextRef: React.RefObject<HTMLInputElement> | null = null) => {
@@ -164,7 +151,7 @@ export default function App() {
       <Navbar />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-6 md:p-10">
-       
+        {/* INPUTS */}
         <section className="bg-black border border-white/10 p-6 rounded-xl">
           <h2 className="text-xl font-light tracking-wide mb-6">Ingresar datos</h2>
 
@@ -215,7 +202,7 @@ export default function App() {
                 type="number"
                 value={produccionActual}
                 onChange={(e) => setProduccionActual(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, scrapRef)}
+                onKeyDown={(e) => handleKeyDown(e, ciclosRef)}
                 className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-lg focus:ring-1 focus:ring-white/20 outline-none"
                 placeholder="Ej: 2971"
                 min="0"
@@ -223,27 +210,9 @@ export default function App() {
               />
             </div>
 
-            <div>
-              <label htmlFor="scrap" className="block font-light text-white/80 tracking-wide">
-              cantadad anterior de Scraps
-              </label>
-              <input
-                id="scrap"
-                ref={scrapRef}
-                type="number"
-                value={scrapActual}
-                onChange={(e) => setScrapActual(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, ciclosRef)}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-lg focus:ring-1 focus:ring-white/20 outline-none"
-                placeholder="Ej: 178"
-                min="0"
-                step="any"
-              />
-            </div>
-
-            {scrapHistory.length > 0 && (
+            {scrapAnterior !== null && (
               <div className="text-sm text-white/70">
-                Scrap anterior: <strong>{scrapHistory[0]}</strong>
+                Scrap anterior: <strong>{scrapAnterior}</strong>
               </div>
             )}
 
@@ -261,7 +230,7 @@ export default function App() {
         <section className="bg-black border border-white/10 p-6 rounded-xl">
           {results.length > 0 && (
             <div className="bg-white/10 border border-white/20 rounded-lg p-4 mb-6 text-center">
-              <p className="text-sm text-white/70"> total</p>
+              <p className="text-sm text-white/70">Scrap calculado</p>
               <p className="text-xl font-light mt-1">
                 <span style={{ color: totalDifference >= 0 ? "green" : "red" }}>
                   {totalDifference >= 0 ? "+" : ""}
@@ -278,23 +247,23 @@ export default function App() {
           ) : (
             results.map((r, i) => (
               <div key={i} className="p-4 bg-white/5 border border-white/10 rounded-lg mb-4">
+                <p><strong className="font-light">Ciclos:</strong> {r.cycles}</p>
+                <p><strong className="font-light">Piezas por cuchilla:</strong> {r.piecesPerBlade}</p>
                 <p><strong className="font-light">Piezas esperadas:</strong> {r.expectedPieces}</p>
-                <p><strong className="font-light">Producción real:</strong> {r.productionActual}</p>
+                <p><strong className="font-light">Producción real:</strong> {r.currentProduction}</p>
                 <p>
-                  <strong className="font-light">Diferencia:</strong>{" "}
+                  <strong className="font-light">Scrap:</strong>{" "}
                   <span style={{ color: r.difference >= 0 ? "green" : "red" }}>
                     {r.difference >= 0 ? "+" : ""}
                     {r.difference.toFixed(2)} piezas
                   </span>
                 </p>
-                <p><strong className="font-light">Scrap total (actual + anterior):</strong> {r.scrapTotal}</p>
-                <p><strong className="font-light">Ciclos ajustados:</strong> {r.adjustedCycles.toFixed(2)}</p>
                 <button
                   type="button"
                   onClick={() => copyText(r.difference.toFixed(2))}
                   className="mt-3 px-4 py-2 bg-white text-black rounded hover:bg-white/90 transition"
                 >
-                  Copiar diferencia
+                  Copiar scrap
                 </button>
               </div>
             ))
