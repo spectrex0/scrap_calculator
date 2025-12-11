@@ -225,7 +225,7 @@ export default function App() {
 
             <div>
               <label htmlFor="scrap" className="block font-light text-white/80 tracking-wide">
-                Scrap actual
+              cantadad anterior de Scraps
               </label>
               <input
                 id="scrap"
