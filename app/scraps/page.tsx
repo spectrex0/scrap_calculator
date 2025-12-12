@@ -35,15 +35,14 @@ export default function App() {
 
   const logout = useCallback(() => {
     localStorage.removeItem("userdata");
-    setUsername(null); // ✅ Actualiza estado local
+    setUsername(null);  
     window.location.reload();
   }, []);
 
   const addScrap = useCallback(() => {
     setScraps((prev) => [...prev, ""]);
   }, []);
-
-  // ✅ Solo listeners de teclado en el useEffect (sin tocar estado del usuario)
+ 
   useEffect(() => {
     const handleGlobalKeys = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
@@ -86,49 +85,53 @@ export default function App() {
   };
 
   const calculate = async () => {
-    const filteredScraps = scraps.filter((s) => s.trim() !== "");
-    if (!woTotal.trim() || !totalYards.trim() || filteredScraps.length === 0) {
-      alert("Por favor, completa todos los campos.");
-      return;
-    }
+  const filteredScraps = scraps.filter((s) => s.trim() !== "");
+  if (!woTotal.trim() || !totalYards.trim() || filteredScraps.length === 0) {
+    alert("Por favor, completa todos los campos.");
+    return;
+  }
 
-    try {
-      const res = await fetch("/api/calculate/scraps", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scraps: filteredScraps,
-          woTotal: woTotal.trim(),
-          totalYards: totalYards.trim(),
-        }),
-      });
+  try {
+    const res = await fetch("/api/calculate/scraps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scraps: filteredScraps,
+        woTotal: woTotal.trim(),
+        totalYards: totalYards.trim(),
+      }),
+    });
 
-      const data = await res.json();
-      if (data.success) {
-        setResults(data.results);
-        setScraps([""]);
+    const data = await res.json();
+    if (data.success) {
+      setResults(data.results);
+      setScraps([""]);
  
-        if (username) {
-          const scrapsList = filteredScraps.join(", ");
-          const totalYardsResult = data.results.reduce((sum: number, r: Result) => sum + r.finalResult, 0);
-          const event = `[${scrapsList}]
-                         WO: ${woTotal.trim()}
-                         Yardas in WO: ${totalYards.trim()}
-                         Total: ${totalYardsResult.toFixed(2)} yardas`;
-          sendLog(username, event);
-        }
+      const currentUsername = typeof window !== "undefined"
+        ? localStorage.getItem("userdata")
+        : null;
 
-        setTimeout(() => {
-          if (inputRefs.current[0]) inputRefs.current[0].focus();
-        }, 10);
-      } else {
-        alert("Error al calcular: " + (data.message || "intente de nuevo"));
+      if (currentUsername) {
+        const scrapsList = filteredScraps.join(", ");
+        const totalYardsResult = data.results.reduce((sum: number, r: Result) => sum + r.finalResult, 0);
+        const event = `[${scrapsList}]
+                       WO: ${woTotal.trim()}
+                       Yardas in WO: ${totalYards.trim()}
+                       Total: ${totalYardsResult.toFixed(2)} yardas`;
+        sendLog(currentUsername, event);
       }
-    } catch (err) {
-      console.error(err);
-      alert("Error de conexión");
+
+      setTimeout(() => {
+        if (inputRefs.current[0]) inputRefs.current[0].focus();
+      }, 10);
+    } else {
+      alert("Error al calcular: " + (data.message || "intente de nuevo"));
     }
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Error de conexión");
+  }
+};
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
     if (e.key === "Enter") {

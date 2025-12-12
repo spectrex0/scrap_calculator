@@ -99,7 +99,8 @@ const api = new Elysia({ prefix: "/api" })
         };
       }
 
-
+      // 🔢 Cálculo exacto de la imagen:
+      // Ej: 67 * 47 = 3149 → 3149 - 2971 = 178
       const expectedPieces = c * p;
       const difference = expectedPieces - curr;
 
