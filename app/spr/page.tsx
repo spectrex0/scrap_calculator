@@ -9,26 +9,44 @@ interface Result {
   piecesPerBlade: number;
   expectedPieces: number;
   currentProduction: number;
-  difference: number; // Este es el scrap
+  difference: number;
 }
+
+interface UserData {
+  username: string;
+  role: string;
+}
+
+const getUserDataFromStorage = (): UserData | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("userdata");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
 
 const sendLog = async (username: string, event: string) => {
   try {
     await rpc.api.log.post({ username, event });
-  } catch {}
+  } catch (error) {
+    console.error("❌ Error enviando log:", error);
+  }
 };
 
 export default function App() {
-  const initialUser = typeof window !== "undefined" ? localStorage.getItem("userdata") : null;
-  const [username, setUsername] = useState<string | null>(initialUser);
+  const [username, setUsername] = useState<string | null>(() => {
+    const userData = getUserDataFromStorage();
+    return userData?.username ?? null;
+  });
 
   const [ciclos, setCiclos] = useState<string>("");
   const [piezasPorCuchilla, setPiezasPorCuchilla] = useState<string>("");
   const [produccionActual, setProduccionActual] = useState<string>("");
-
   const [results, setResults] = useState<Result[]>([]);
 
-  // ✅ Inicialización perezosa desde localStorage (sin useEffect)
   const [scrapAnterior, setScrapAnterior] = useState<number | null>(() => {
     if (typeof window === "undefined") return null;
     const saved = localStorage.getItem("ultimoScrap");
@@ -43,20 +61,22 @@ export default function App() {
   const piezasRef = useRef<HTMLInputElement>(null!);
   const produccionRef = useRef<HTMLInputElement>(null!);
 
-  // ✅ Guardar scrapAnterior en localStorage cuando cambie
   useEffect(() => {
     if (typeof window !== "undefined" && scrapAnterior !== null) {
       localStorage.setItem("ultimoScrap", scrapAnterior.toString());
     }
   }, [scrapAnterior]);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const userData = getUserDataFromStorage();
+    if (userData?.username) {
+      await sendLog(userData.username, "Logout");
+    }
     localStorage.removeItem("userdata");
     setUsername(null);
     window.location.reload();
   }, []);
 
-  // Atajos de teclado
   useEffect(() => {
     const handleGlobalKeys = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
@@ -110,14 +130,14 @@ export default function App() {
       if (data.success) {
         const result: Result = data.result;
         setResults([result]);
-        setScrapAnterior(result.difference); // ✅ Guardar el scrap calculado
+        setScrapAnterior(result.difference);
 
-        if (username) {
-          const event = `Ciclos: ${result.cycles}\nPiezas/cuchilla: ${result.piecesPerBlade}\nProducción: ${result.currentProduction}\nScrap: ${result.difference}`;
-          sendLog(username, event);
+        const userData = getUserDataFromStorage();
+        if (userData?.username) {
+          const event = `Ciclos: ${result.cycles} | Piezas/cuchilla: ${result.piecesPerBlade} | Producción: ${result.currentProduction} | Scrap: ${result.difference.toFixed(2)}`;
+          await sendLog(userData.username, "Calculation");
         }
 
-        // Limpiar y enfocar
         setCiclos("");
         setPiezasPorCuchilla("");
         setProduccionActual("");
@@ -128,6 +148,11 @@ export default function App() {
     } catch (err) {
       console.error(err);
       alert("Error de conexión con el servidor");
+      
+      const userData = getUserDataFromStorage();
+      if (userData?.username) {
+        await sendLog(userData.username, "Error: Connection failed");
+      }
     }
   };
 
@@ -151,7 +176,6 @@ export default function App() {
       <Navbar />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-6 md:p-10">
-        {/* INPUTS */}
         <section className="bg-black border border-white/10 p-6 rounded-xl">
           <h2 className="text-xl font-light tracking-wide mb-6">Ingresar datos</h2>
 
@@ -226,7 +250,6 @@ export default function App() {
           </div>
         </section>
 
-        {/* RESULTS */}
         <section className="bg-black border border-white/10 p-6 rounded-xl">
           {results.length > 0 && (
             <div className="bg-white/10 border border-white/20 rounded-lg p-4 mb-6 text-center">

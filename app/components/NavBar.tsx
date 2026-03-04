@@ -117,7 +117,7 @@ export default function Navbar() {
               <ul className="text-xs text-white/70 space-y-2">
                 <li>
                   <span className="inline-block w-12 bg-white/5 border select-none border-white/10 text-center rounded mr-2 py-0.5">
-                    Tab
+                    +
                   </span>
                   Agrega campo (si hay valor)
                 </li>
@@ -138,7 +138,6 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Menú de usuario */}
         <div className="relative">
           <button
             onClick={() => setMenu(!menu)}

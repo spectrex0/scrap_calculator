@@ -18,20 +18,22 @@ async function verifyPassword(password: string, salt: string, hash: string): Pro
 
 export const authRoutes = new Elysia({ prefix: "/auth" })
   .post("/register", async ({ body }) => {
-    const { username, password } = body;
+    const { username, password, role, admin } = body;
 
     const exists = await User.findOne({ username });
     if (exists) return { success: false, message: "User exists" };
 
     const { salt, hash } = await hashPassword(password);
 
-    await User.create({ username, password: hash, salt });  
+    await User.create({ username: username, password: hash, salt, role, admin });  
 
     return { success: true };
   }, {
     body: t.Object({
       username: t.String(),
-      password: t.String()
+      password: t.String(),
+      role: t.String(),
+      admin: t.Boolean()
     })
   })
 

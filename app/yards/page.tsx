@@ -2,7 +2,7 @@
 import Navbar from "@/app/components/NavBar";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Cambiamos la interfaz para reflejar lo que realmente recibimos del backend
+
 interface Result {
   WyC: number; // Piezas faltantes
   RyY: number; // Yardas faltantes

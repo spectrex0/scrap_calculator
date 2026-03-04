@@ -81,7 +81,7 @@ const api = new Elysia({ prefix: "/api" })
     }
   )
 .post(
-  "/calculate/spr", // 👈 ruta tal como la tienes
+  "/calculate/spr",
   ({ body }) => {
     const { cycles, piecesPerBlade, currentProduction } = body;
 
@@ -99,8 +99,7 @@ const api = new Elysia({ prefix: "/api" })
         };
       }
 
-      // 🔢 Cálculo exacto de la imagen:
-      // Ej: 67 * 47 = 3149 → 3149 - 2971 = 178
+
       const expectedPieces = c * p;
       const difference = expectedPieces - curr;
 
@@ -143,6 +142,7 @@ const api = new Elysia({ prefix: "/api" })
           error: "WO Total y Total de Yardas deben ser números válidos.",
         };
       }
+     
 
       if (!Array.isArray(currentProduction)) {
         return {
@@ -163,7 +163,7 @@ const api = new Elysia({ prefix: "/api" })
           const WyC = WO - CurrentP;
           const RyW = WyC / WO;
           const RyY = RyW * TY;
-
+          
           return {
             WyC: WyC,
             RyY: RyY,
@@ -214,6 +214,39 @@ const api = new Elysia({ prefix: "/api" })
     }
   )
 
+.post('calculate/pty', ({ body }) => {
+  const { targetPieces, woTotal, totalYards } = body;
+
+  try {
+    const targetPiecesNum = parseFloat(targetPieces);
+    const woTotalNum = parseFloat(woTotal);
+    const totalYardsNum = parseFloat(totalYards);
+
+    if (isNaN(targetPiecesNum) || isNaN(woTotalNum) || isNaN(totalYardsNum)) {
+      return {
+        error: 'Invalid number format in input'
+      };
+    }
+
+    const TPyWT = targetPiecesNum / woTotalNum;
+    const result = TPyWT * totalYardsNum
+    return {
+      yardas: result
+    };
+
+  } catch (error) {
+    return {
+      ErrorMessage: (error as Error).message
+    };
+  }
+}, {
+  body: t.Object({
+    targetPieces: t.String(),
+    woTotal: t.String(),
+    totalYards: t.String()
+  })
+})
+
   .post(
     "/comment",
     async ({ body }) => {
@@ -247,6 +280,7 @@ const api = new Elysia({ prefix: "/api" })
       }),
     }
   );
+
 
 export type API = typeof api;
 export const POST = api.handle;

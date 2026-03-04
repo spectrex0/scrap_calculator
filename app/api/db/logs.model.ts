@@ -11,4 +11,6 @@ const logSchema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-export const Log = models.scLog || model("scLog", logSchema);
+const modelName = "SCLog";
+
+export const Log = (models)[modelName] || model(modelName, logSchema);

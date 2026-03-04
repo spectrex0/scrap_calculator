@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 interface User {
   _id: string;
   username: string;
+  admin: string;
 }
 
 interface SessionLog {
@@ -31,13 +32,13 @@ export default function AdminPanel() {
   const [newPassword, setNewPassword] = useState("");
   const [modalError, setModalError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [sbAdmin, setSBA] = useState(false);
 
   useEffect(() => {
     const loadUsers = async () => {
       try {
         const res = await rpc.api.admin.users.get();
-        if (res.error)
-          throw new Error(res.error.message || "Failed to load users");
+        if (res.error) throw new Error(res.error.message || "Failed to load users");
         setUsers(res.data?.users || []);
       } catch {
         setUsers([]);
@@ -61,12 +62,17 @@ export default function AdminPanel() {
   const loadUserLogs = async (userId: string, userName: string) => {
     setSelectedUser(userName);
     try {
-      const res = await rpc.api.admin.logs.get({ $query: { userId } });
+      const res = await rpc.api.admin.logs.get({
+        $query: { username: userName },
+      });
+
+      if (res.error) {
+        throw new Error(res.error.message || "Failed to load logs");
+      }
 
       let logs: SessionLog[] = [];
-      if (Array.isArray(res)) {
-        logs = res;
-      } else if (Array.isArray(res?.data?.logs)) {
+
+      if (res.data?.logs && Array.isArray(res.data.logs)) {
         logs = res.data.logs;
       } else {
         logs = [];
@@ -86,28 +92,31 @@ export default function AdminPanel() {
     }
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.ChangeEvent) => {
     e.preventDefault();
     setModalError(null);
     setIsCreating(true);
 
-    const username = newUsername.trim();
-    const password = newPassword.trim();
+    const admin = sbAdmin;
 
-    if (!username || !password) {
+    if (!newUsername || !newPassword) {
       setModalError("Todos los campos son obligatorios");
       setIsCreating(false);
       return;
     }
 
     try {
-      const res = await rpc.api.auth.register.post({ username, password });
-      if (res.error)
-        throw new Error(res.error.message || "Error al crear el usuario");
+      const res = await rpc.api.auth.register.post({
+        username: newUsername,
+        password: newPassword,
+        role: "user",
+        admin: admin,
+      });
+
+      if (res.error) throw new Error(res.error.message || "Error al crear el usuario");
 
       const updated = await rpc.api.admin.users.get();
-      if (updated.error)
-        throw new Error("No se pudieron recargar los usuarios");
+      if (updated.error) throw new Error("No se pudieron recargar los usuarios");
       setUsers(updated.data?.users || []);
 
       setIsModalOpen(false);
@@ -133,7 +142,6 @@ export default function AdminPanel() {
 
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          {/* Columna 1: Usuarios */}
           <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[#1a1a1a] flex justify-between items-center">
               <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
@@ -155,7 +163,7 @@ export default function AdminPanel() {
                 <div className="space-y-2">
                   {users.map((u) => (
                     <button
-                      key={u._id}
+                      key={u.username}
                       onClick={() => loadUserLogs(u._id, u.username)}
                       className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
                         selectedUser === u.username
@@ -171,7 +179,6 @@ export default function AdminPanel() {
             </div>
           </div>
 
-          {/* Columna 2: Logs del usuario seleccionado */}
           <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[#1a1a1a]">
               <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
@@ -192,7 +199,7 @@ export default function AdminPanel() {
                       key={i}
                       className="px-4 py-3 bg-[#111] rounded-lg border border-[#1a1a1a]"
                     >
-                      <p className="font-mono text-white text-sm break-words">
+                      <p className="font-mono text-white text-sm wrap-break-words">
                         {log.action}
                       </p>
                       <p className="text-gray-500 mt-1.5 text-xs">{log.date}</p>
@@ -203,17 +210,16 @@ export default function AdminPanel() {
             </div>
           </div>
 
-          {/* Columna 3: Comentarios (nueva sección visible) */}
           <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[#1a1a1a]">
               <h2 className="text-lg font-medium tracking-wide text-gray-200 uppercase">
-                Comentarios
+                Comments
               </h2>
             </div>
             <div className="p-3 max-h-[65vh] overflow-y-auto custom-scrollbar">
               {comments.length === 0 ? (
                 <p className="px-4 py-3 text-gray-500 italic">
-                  No hay comentarios
+                  Theres no comments to show
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -222,10 +228,10 @@ export default function AdminPanel() {
                       key={i}
                       className="px-4 py-3 bg-[#111] rounded-lg border border-[#1a1a1a]"
                     >
-                      <p className="text-white text-sm break-words">
+                      <p className="text-white text-sm wrap-break-words">
                         {c.title}
                       </p>
-                      <p className="text-gray-400 break-words">
+                      <p className="text-gray-400 wrap-break-word">
                         &ldquo;{c.content}&rdquo;
                       </p>
                       <p className="text-gray-600 text-xs mt-1.5">
@@ -240,7 +246,6 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Modal de creación de usuario */}
       {isModalOpen && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
@@ -252,13 +257,13 @@ export default function AdminPanel() {
           >
             <div className="px-5 py-4 border-b border-[#1a1a1a]">
               <h3 className="text-lg font-medium tracking-wide text-white">
-                Nuevo Usuario
+                New user
               </h3>
             </div>
             <form onSubmit={handleCreateUser} className="p-5 space-y-4">
               <div>
                 <label className="block text-gray-400 text-sm mb-1">
-                  Nombre de usuario
+                  User name
                 </label>
                 <input
                   type="text"
@@ -270,7 +275,7 @@ export default function AdminPanel() {
               </div>
               <div>
                 <label className="block text-gray-400 text-sm mb-1">
-                  Contraseña
+                  Password
                 </label>
                 <input
                   type="password"
@@ -279,6 +284,18 @@ export default function AdminPanel() {
                   className="w-full bg-[#111] border border-[#1a1a1a] rounded px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-white/20"
                   placeholder="••••••••"
                 />
+              </div>
+              <div className="flex items-center space-x-2 mt-1">
+                <input
+                  type="checkbox"
+                  id="isAdmin"
+                  checked={sbAdmin}
+                  onChange={(e) => setSBA(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-[#111] border border-[#1a1a1a] rounded focus:ring-blue-500 focus:ring-1"
+                />
+                <label htmlFor="isAdmin" className="text-gray-300 text-sm">
+                  Should be admin?
+                </label>
               </div>
               {modalError && (
                 <p className="text-red-400 text-sm">{modalError}</p>
@@ -289,7 +306,7 @@ export default function AdminPanel() {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 text-gray-300 hover:text-white"
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 <button
                   type="submit"

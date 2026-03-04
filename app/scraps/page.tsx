@@ -2,7 +2,7 @@
 
 import { rpc } from "@/lib/rpc";
 import Navbar from "@/app/components/NavBar";
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useMemo, useEffect } from "react";
 
 interface Result {
   scrap: number;
@@ -10,19 +10,45 @@ interface Result {
   finalResult: number;
 }
 
-const sendLog = async (username: string, event: string) => {
-  try {
-    await rpc.api.log.post(
-      {username: username, event: event}
-    )
-  } catch (error) {
-    // nothing
-  }
+interface UserData {
+  username: string;
+  role: string;
 }
 
-export default function App() { 
-  const initialUser = typeof window !== "undefined" ? localStorage.getItem("userdata") : null;
-  const [username, setUsername] = useState<string | null>(initialUser);
+const getCookie = (name: string): string | null => {
+  if (typeof window === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const raw = parts.pop()?.split(";").shift();
+    if (raw) return decodeURIComponent(raw);
+  }
+  return null;
+};
+
+const parseUserData = (): UserData | null => {
+  const cookie = getCookie("userdata");
+  if (!cookie) return null;
+  try {
+    return JSON.parse(cookie);
+  } catch {
+    return null;
+  }
+};
+
+const sendLog = async (username: string, event: string) => {
+  try {
+    await rpc.api.log.post({ username, event });
+  } catch (error) {
+    console.error("Error sending log:", error);
+  }
+};
+
+export default function App() {
+  const [username, setUsername] = useState<string | null>(() => {
+    const userData = parseUserData();
+    return userData?.username ?? null;
+  });
 
   const [scraps, setScraps] = useState<string[]>([""]);
   const [woTotal, setWoTotal] = useState<string>("");
@@ -34,15 +60,15 @@ export default function App() {
   const yardsInputRef = useRef<HTMLInputElement>(null);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("userdata");
-    setUsername(null);  
+    document.cookie = "userdata=; path=/; max-age=0";
+    setUsername(null);
     window.location.reload();
   }, []);
 
   const addScrap = useCallback(() => {
     setScraps((prev) => [...prev, ""]);
   }, []);
- 
+
   useEffect(() => {
     const handleGlobalKeys = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
@@ -85,59 +111,56 @@ export default function App() {
   };
 
   const calculate = async () => {
-  const filteredScraps = scraps.filter((s) => s.trim() !== "");
-  if (!woTotal.trim() || !totalYards.trim() || filteredScraps.length === 0) {
-    alert("Por favor, completa todos los campos.");
-    return;
-  }
-
-  try {
-    const res = await fetch("/api/calculate/scraps", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        scraps: filteredScraps,
-        woTotal: woTotal.trim(),
-        totalYards: totalYards.trim(),
-      }),
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      setResults(data.results);
-      setScraps([""]);
- 
-      const currentUsername = typeof window !== "undefined"
-        ? localStorage.getItem("userdata")
-        : null;
-
-      if (currentUsername) {
-        const scrapsList = filteredScraps.join(", ");
-        const totalYardsResult = data.results.reduce((sum: number, r: Result) => sum + r.finalResult, 0);
-        const event = `[${scrapsList}]
-                       WO: ${woTotal.trim()}
-                       Yardas in WO: ${totalYards.trim()}
-                       Total: ${totalYardsResult.toFixed(2)} yardas`;
-        sendLog(currentUsername, event);
-      }
-
-      setTimeout(() => {
-        if (inputRefs.current[0]) inputRefs.current[0].focus();
-      }, 10);
-    } else {
-      alert("Error al calcular: " + (data.message || "intente de nuevo"));
+    const filteredScraps = scraps.filter((s) => s.trim() !== "");
+    if (!woTotal.trim() || !totalYards.trim() || filteredScraps.length === 0) {
+      alert("Por favor, completa todos los campos.");
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    alert("Error de conexión");
-  }
-};
+
+    try {
+      const res = await fetch("/api/calculate/scraps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scraps: filteredScraps,
+          woTotal: woTotal.trim(),
+          totalYards: totalYards.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setResults(data.results);
+        setScraps([""]);
+
+        const userData = parseUserData();
+        if (userData?.username) {
+          const scrapsList = filteredScraps.join(", ");
+          const totalYardsResult = data.results.reduce(
+            (sum: number, r: Result) => sum + r.finalResult,
+            0
+          );
+          const event = `[${scrapsList}] WO: ${woTotal.trim()} Yards in WO: ${totalYards.trim()} Total: ${totalYardsResult.toFixed(2)} yards`;
+          sendLog(userData.username, event);
+        }
+
+        setTimeout(() => {
+          if (inputRefs.current[0]) inputRefs.current[0].focus();
+        }, 10);
+      } else {
+        alert("Error al calcular: " + (data.message || "intente de nuevo"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error de conexión");
+    }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
     if (e.key === "Enter") {
       e.preventDefault();
       calculate();
-    } else if (e.key === "Tab" && !e.shiftKey) {
+    } else if (e.key === "+" && !e.shiftKey) {
       e.preventDefault();
       if (index === scraps.length - 1 && scraps[index].trim() !== "") {
         addScrap();
@@ -191,7 +214,6 @@ export default function App() {
       <Navbar />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-6 md:p-10">
-        {/* INPUTS */}
         <section className="bg-black border border-white/10 p-6 rounded-xl">
           <h2 className="text-xl font-light tracking-wide mb-6">Ingresar datos</h2>
 
@@ -280,7 +302,6 @@ export default function App() {
           </button>
         </section>
 
-        {/* RESULTS */}
         <section className="bg-black border border-white/10 p-6 rounded-xl">
           {results.length > 0 && (
             <div className="bg-white/10 border border-white/20 rounded-lg p-4 mb-6 text-center">

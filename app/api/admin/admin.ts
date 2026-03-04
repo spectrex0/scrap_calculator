@@ -2,28 +2,30 @@ import Elysia from "elysia";
 import { comment } from "../db/comments.model";
 import { Log } from "../db/logs.model";
 import { User } from "../db/user.model";
+
 export const adminRoutes = new Elysia({ prefix: "/admin" })
-
   .get("/logs", async ({ query }) => {
-    const { userId } = query;
-
-    const user = await User.findById(userId);
-    if (!user || user.role !== "admin") {
-      return { success: false, message: "Access denied" };
+    const { username } = query;
+ 
+    if (!username) {
+      return { success: false, message: "Username required" };
     }
 
-    const logs = await Log.find().sort({ createdAt: -1 });
+    const logs = await Log.find({ 
+      username: { $regex: new RegExp(`^${username}$`, "i") } 
+    }).sort({ createdAt: -1 });
 
     return {
       success: true,
       logs,
     };
   })
+  
 
   .get("/logs/sesion", async () => {
-    const SLogs = await Log.find({});
+    const SLogs = await Log.find({}).sort({ createdAt: -1 });
     return {
-      successs: true,
+      success: true,
       SLogs,
     };
   })
