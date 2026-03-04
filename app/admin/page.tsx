@@ -92,7 +92,7 @@ export default function AdminPanel() {
     }
   };
 
-  const handleCreateUser = async (e: React.ChangeEvent) => {
+  const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setModalError(null);
     setIsCreating(true);
